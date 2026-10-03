@@ -1,0 +1,7 @@
+{
+ "num_perm": 64,
+ "backend": "fast",
+ "seed": 20260214,
+ "fingerprint": "blake2b(signature, digest_size=8) -> 16 hex chars (64-bit)",
+ "row_order": "corpus.jsonl row order / pid ascending"
+}

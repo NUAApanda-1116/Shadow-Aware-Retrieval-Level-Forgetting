@@ -1,0 +1,11 @@
+{
+ "encoder": "BAAI/bge-small-en-v1.5",
+ "dim": 384,
+ "n": 11410,
+ "normalized": true,
+ "dtype": "float32",
+ "backend": "sentence-transformers",
+ "device": "cuda",
+ "row_order": "corpus.jsonl row order / pid ascending",
+ "seconds": 4.88
+}

@@ -1,0 +1,223 @@
+{
+ "dataset": "multihoprag",
+ "ds_key": "ds1",
+ "seed": 20260214,
+ "raw": {
+  "source": "yixuantt/MultiHopRAG (corpus.json + MultiHopRAG.json)",
+  "n_raw_docs": 609,
+  "n_raw_queries": 2556
+ },
+ "chunking": {
+  "chunk_words": 120,
+  "overlap": 0.2,
+  "n_raw_docs_with_chunks": 609,
+  "n_title_only_docs": 0,
+  "n_chunks": 11227,
+  "words_mean": 117.40901398414536,
+  "words_total": 1318151
+ },
+ "topics": {
+  "source": "raw",
+  "n_topics": 6,
+  "dominant_share_before": 0.346,
+  "dominant_share_after": 0.346,
+  "distribution": {
+   "sports": 211,
+   "technology": 172,
+   "entertainment": 114,
+   "business": 81,
+   "science": 21,
+   "health": 10
+  }
+ },
+ "silos": {
+  "silo5": {
+   "n_silos": 5,
+   "per_client_docs": {
+    "c0": 49,
+    "c1": 390,
+    "c2": 64,
+    "c3": 72,
+    "c4": 34
+   },
+   "topic_by_client": {
+    "c0": {
+     "technology": 6,
+     "sports": 16,
+     "health": 3,
+     "business": 10,
+     "science": 13,
+     "entertainment": 1
+    },
+    "c1": {
+     "entertainment": 68,
+     "business": 61,
+     "sports": 118,
+     "technology": 142,
+     "science": 1
+    },
+    "c2": {
+     "sports": 35,
+     "business": 10,
+     "entertainment": 9,
+     "science": 6,
+     "health": 4
+    },
+    "c3": {
+     "sports": 16,
+     "technology": 21,
+     "entertainment": 34,
+     "health": 1
+    },
+    "c4": {
+     "entertainment": 2,
+     "sports": 26,
+     "health": 2,
+     "technology": 3,
+     "science": 1
+    }
+   },
+   "min_client_docs": 34,
+   "max_client_docs": 390,
+   "topic_entropy_mean": 1.2287765759203704
+  },
+  "silo10": {
+   "n_silos": 10,
+   "per_client_docs": {
+    "c0": 22,
+    "c1": 20,
+    "c2": 88,
+    "c3": 271,
+    "c4": 65,
+    "c5": 83,
+    "c6": 10,
+    "c7": 17,
+    "c8": 11,
+    "c9": 22
+   },
+   "topic_by_client": {
+    "c0": {
+     "sports": 7,
+     "entertainment": 5,
+     "technology": 8,
+     "business": 2
+    },
+    "c1": {
+     "business": 9,
+     "entertainment": 5,
+     "health": 2,
+     "science": 1,
+     "technology": 2,
+     "sports": 1
+    },
+    "c2": {
+     "entertainment": 48,
+     "sports": 11,
+     "business": 25,
+     "health": 3,
+     "science": 1
+    },
+    "c3": {
+     "sports": 92,
+     "technology": 155,
+     "health": 2,
+     "business": 9,
+     "entertainment": 8,
+     "science": 5
+    },
+    "c4": {
+     "entertainment": 42,
+     "sports": 7,
+     "science": 12,
+     "business": 3,
+     "technology": 1
+    },
+    "c5": {
+     "business": 10,
+     "sports": 67,
+     "entertainment": 4,
+     "technology": 2
+    },
+    "c6": {
+     "business": 8,
+     "science": 1,
+     "sports": 1
+    },
+    "c7": {
+     "technology": 4,
+     "sports": 11,
+     "business": 1,
+     "science": 1
+    },
+    "c8": {
+     "business": 8,
+     "health": 1,
+     "sports": 1,
+     "entertainment": 1
+    },
+    "c9": {
+     "sports": 13,
+     "health": 2,
+     "entertainment": 1,
+     "business": 6
+    }
+   },
+   "min_client_docs": 10,
+   "max_client_docs": 271,
+   "topic_entropy_mean": 1.0088109698818601
+  }
+ },
+ "shadow": {
+  "n_selected_docs": 183,
+  "n_r10": 61,
+  "n_injected": 183,
+  "ratio_doc_level": {
+   "r10": 0.1,
+   "r30": 0.3
+  },
+  "sim_mean": 0.982686192937236,
+  "sim_min": 0.9141806960105896,
+  "n_below_floor": 0
+ },
+ "forget_sets": {
+  "r1": {
+   "n_docs": 6,
+   "n_chunks": 128
+  },
+  "r5": {
+   "n_docs": 30,
+   "n_chunks": 559
+  },
+  "r20": {
+   "n_docs": 122,
+   "n_chunks": 2106
+  },
+  "requester_client": "1",
+  "requester_docs": 390
+ },
+ "corpus": {
+  "n_chunks": 11410,
+  "n_shadow_chunks": 183,
+  "n_words_total": 1339256
+ },
+ "queries": {
+  "n_queries": 2000,
+  "n_with_gold": 2000,
+  "n_synthetic": 0,
+  "gold_pids_mean": 47.689,
+  "per_client": {
+   "c1": 1498,
+   "c0": 102,
+   "c3": 220,
+   "c2": 93,
+   "c4": 87
+  }
+ },
+ "embedding": {
+  "dim": 384,
+  "n": 11410,
+  "seconds": 4.88,
+  "norm_check": 1.0001471042633057
+ },
+ "elapsed_seconds": 26.23
+}
