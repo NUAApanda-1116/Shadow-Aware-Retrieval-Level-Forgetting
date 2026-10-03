@@ -1,0 +1,54 @@
+# FedRevoke dependency pins.
+#
+# Verified on:  Windows 11 / Python 3.14.7 / RTX 5080 Laptop (sm_120)
+# Install:      python -m venv .venv
+#               .venv\Scripts\python.exe -m pip install -r requirements.txt
+#
+# torch must come from the CUDA 12.8 wheel index, otherwise sm_120 raises
+# "no kernel image is available":
+#   python -m pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cu128
+#
+# The repository itself is a src/ layout; after installing these, also run
+#   python -m pip install -e . --no-deps
+
+# ---- deep learning / GPU (cu128 wheels for sm_120 / RTX 50 series) ----
+torch==2.11.0+cu128
+
+# ---- models and NLP ----
+transformers==5.18.0
+sentence-transformers==6.1.0
+tokenizers==0.23.2
+safetensors==0.8.0
+huggingface_hub==1.33.0
+accelerate==1.15.0
+bitsandbytes==0.50.2          # Windows py3-none-win_amd64 wheel; 4-bit quantisation backend
+datasets==5.0.1
+pyarrow==25.0.1
+
+# ---- retrieval / vector indexes ----
+faiss-cpu==1.15.1             # IVF-Flat back-end used by every reported table
+hnswlib==0.8.0                # NOTE: PyPI ships sdist only and there is no Windows
+                              # wheel for Python >= 3.12. The paper's workaround was to
+                              # extract the conda-forge pre-built hnswlib.cp314-win_amd64.pyd
+                              # into site-packages (that helper script is not part of this
+                              # repository). Skip hnswlib entirely if you only need the
+                              # IVF-Flat back-end used in the paper.
+usearch==2.26.2               # alternative HNSW implementation (official py3.14 wheel)
+# chroma-hnswlib==0.7.6       # dropped: only cp37-cp311 win_amd64 wheels exist
+
+# ---- scientific stack ----
+numpy==2.5.3
+scipy==1.18.1
+scikit-learn==1.9.1
+pandas==3.0.6
+datasketch==2.0.0             # MinHash reference implementation (the pipeline uses its own
+                              # vectorised numpy version)
+
+# ---- plotting ----
+matplotlib==3.11.2
+seaborn==0.13.2
+
+# ---- engineering ----
+pyyaml==6.0.3
+tqdm==4.70.1
+pytest==9.1.1

@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use this code, data splits or the FedRevoke audit protocol, please cite the paper below."
+title: "FedRevoke: Shadow-Aware Retrieval-Level Forgetting for Cross-Silo Federated Retrieval-Augmented Generation"
+abstract: >-
+  FedRevoke is a training-free framework for cross-silo retrieval-level
+  forgetting in federated retrieval-augmented generation. It turns an
+  authenticated revocation request into a provenance-resolved seed set, expands
+  it into a two-channel semantic-shadow closure, erases the closure in cascade,
+  repairs the ANN index locally without retraining, and records the outcome in a
+  hash-chained deletion log.
+type: software
+license: MIT
+authors:
+  - family-names: Xiong
+    given-names: Yongkang
+    email: apanda@nuaa.edu.cn
+    affiliation: "Nanjing University of Aeronautics and Astronautics, Nanjing, China"
+repository-code: "https://github.com/REPLACE-WITH-YOUR-ACCOUNT/FedRevoke"
+keywords:
+  - federated retrieval-augmented generation
+  - retrieval-level forgetting
+  - machine unlearning
+  - approximate nearest neighbor search
+  - data revocation
+  - auditability
+version: 1.0.0
+date-released: "2026-10-03"

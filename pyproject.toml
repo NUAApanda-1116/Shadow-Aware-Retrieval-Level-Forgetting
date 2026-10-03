@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fedrevoke"
+version = "1.0.0"
+description = "Shadow-aware retrieval-level forgetting for cross-silo federated retrieval-augmented generation"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "Yongkang Xiong", email = "apanda@nuaa.edu.cn" }]
+keywords = [
+  "retrieval-augmented generation",
+  "federated learning",
+  "machine unlearning",
+  "approximate nearest neighbor search",
+  "data revocation",
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# Runtime deps are pinned in requirements.txt (they include CUDA-specific torch
+# wheels). Keep this list deliberately empty so that \`pip install -e . --no-deps\`
+# works on a machine that has no GPU, and point users at requirements.txt instead.
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.urls]
+Repository = "https://github.com/REPLACE-WITH-YOUR-ACCOUNT/FedRevoke"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+fedrevoke = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
