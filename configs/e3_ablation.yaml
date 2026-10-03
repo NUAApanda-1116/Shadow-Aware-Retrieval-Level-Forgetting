@@ -1,0 +1,19 @@
+# e3_ablation -- detector / repair ablation grid (E3)
+# Config schema: INTERFACES.md section 10
+exp: e3_ablation
+mode: full
+dataset: ds1
+silos: 5
+revocation_ratios: [0.05]
+shadow_ratios: [0.10]
+variants: [full, no_shadow_closure, no_repair, no_calibration]
+knn_grid: [10, 30, 50, 100]
+sim_threshold_grid: [0.85, 0.90, 0.92, 0.95]
+encoder: BAAI/bge-small-en-v1.5
+generator: Qwen/Qwen2.5-1.5B-Instruct
+generator_4bit: true
+k: 10
+n_queries_eval: 300
+method: fedrevoke
+seed: 20260214
+out_dir: artifacts/results/e3_ablation

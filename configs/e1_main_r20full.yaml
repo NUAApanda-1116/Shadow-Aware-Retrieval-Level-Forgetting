@@ -1,0 +1,27 @@
+# e1_main_r20full -- e1_main variant at r20 with full shadow coverage.
+# WARNING: this file keeps the original exp / out_dir values, which collide with
+# e1_main.yaml.  Run it as
+#     python -m fedrevoke.run_experiments --config configs/e1_main_r20full.yaml \
+#         --exp e1_main_r20full --out-dir artifacts/results/e1_main_r20full
+# so that the main grid is not overwritten.
+exp: e1_main
+mode: full
+dataset: ds1                       # MultiHop-RAG
+silos: 5
+dirichlet_alpha: 0.5
+revocation_ratios: [0.01, 0.05, 0.20]
+shadow_ratios: [0.0, 0.10, 0.30]
+encoder: BAAI/bge-small-en-v1.5
+reranker: BAAI/bge-reranker-base   # optional; null disables it
+generator: Qwen/Qwen2.5-1.5B-Instruct
+generator_4bit: true
+k: 10
+n_queries_eval: 500
+method: fedrevoke
+baselines: [full_rebuild, naive_delete, sisa, lora_finetune, tdsc_adapter]
+shadow: {sim_threshold: 0.92, lsh_threshold: 0.80, knn_k: 50, cross_client_only: true}
+repair: {n_anchors: 64, recalibrate: true}
+seed: 20260214
+out_dir: artifacts/results/e1_main
+max_qa_items: 300          # overrides the default cap of 64; the r20 cell has 244 usable
+                           # revoked queries, so the denominator needs to be large enough

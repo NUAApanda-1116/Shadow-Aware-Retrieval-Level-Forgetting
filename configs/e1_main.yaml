@@ -1,0 +1,21 @@
+# e1_main -- FedRevoke DS1 main grid (Tier A retrieval + E6 shadow sweep)
+# Config schema: INTERFACES.md section 10
+exp: e1_main
+mode: full
+dataset: ds1                       # MultiHop-RAG
+silos: 5
+dirichlet_alpha: 0.5
+revocation_ratios: [0.01, 0.05, 0.20]
+shadow_ratios: [0.0, 0.10, 0.30]
+encoder: BAAI/bge-small-en-v1.5
+reranker: BAAI/bge-reranker-base   # optional; null disables it (nothing on the reported path reads it)
+generator: Qwen/Qwen2.5-1.5B-Instruct
+generator_4bit: true
+k: 10
+n_queries_eval: 500
+method: fedrevoke
+baselines: [full_rebuild, naive_delete, sisa, lora_finetune, tdsc_adapter]
+shadow: {sim_threshold: 0.92, lsh_threshold: 0.80, knn_k: 50, cross_client_only: true}
+repair: {n_anchors: 64, recalibrate: true}
+seed: 20260214
+out_dir: artifacts/results/e1_main

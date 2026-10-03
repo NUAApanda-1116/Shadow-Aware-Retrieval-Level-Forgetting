@@ -1,0 +1,18 @@
+# e0_smoke -- FedRevoke smoke run (synthetic data, MockGenerator, < 60 s)
+# Config schema: INTERFACES.md section 10
+exp: e0_smoke
+mode: smoke                     # MockGenerator + synthetic index, finishes in < 60 s
+dataset: synthetic
+silos: 3
+n_docs: 2000
+n_queries_eval: 50
+revocation_ratios: [0.05]
+shadow_ratios: [0.10]
+encoder: synthetic
+generator: mock
+baselines: [full_rebuild, naive_delete]
+method: fedrevoke
+shadow: {sim_threshold: 0.92, lsh_threshold: 0.80, knn_k: 20, cross_client_only: true}
+repair: {n_anchors: 64, recalibrate: true}
+seed: 20260214
+out_dir: artifacts/results/e0_smoke

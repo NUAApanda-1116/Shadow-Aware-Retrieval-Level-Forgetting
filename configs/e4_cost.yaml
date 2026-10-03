@@ -1,0 +1,17 @@
+# e4_cost -- revocation cost sweep across corpus sizes (E4)
+# Config schema: INTERFACES.md section 10
+exp: e4_cost
+mode: cost
+dataset: ds1
+corpus_sizes: [10000, 50000, 120000]
+silos: 5
+revocation_ratios: [0.05]
+shadow_ratios: [0.10]
+encoder: BAAI/bge-small-en-v1.5
+generator: null                     # index cost only; no generator is loaded
+k: 10
+method: fedrevoke
+baselines: [full_rebuild, naive_delete, sisa]
+measure: [reindex_seconds, bytes_transferred, peak_vram_mb, n_vectors_touched]
+seed: 20260214
+out_dir: artifacts/results/e4_cost
