@@ -1,0 +1,400 @@
+{
+ "exp": "rerun_reenc",
+ "config_path": "E:\\学习作业\\academic\\computing\\submission\\code\\configs\\e1_main.yaml",
+ "mode": "full",
+ "tier": "a",
+ "model": "1.5b",
+ "model_id": "NoneType",
+ "generator": "NoneType",
+ "generator_backend": "none",
+ "n_queries_eval": 500,
+ "stages": [
+  "main"
+ ],
+ "dataset_status": {
+  "ds1": {
+   "name": "multihoprag",
+   "exists": true,
+   "missing": [],
+   "query_vector_source": "file:E:\\学习作业\\academic\\computing\\submission\\code\\data\\processed\\multihoprag\\embeddings_queries_bge-small-en-v1.5.npy",
+   "shadow_map_source": "pid_meta.json",
+   "n_shadowed_docs": 183
+  },
+  "ds2": {
+   "name": "nq",
+   "exists": false,
+   "missing": [
+    "<dataset dir>"
+   ]
+  },
+  "ds3": {
+   "name": "trec-covid",
+   "exists": false,
+   "missing": [
+    "<dataset dir>"
+   ]
+  }
+ },
+ "e6_monotonicity": {
+  "checked": false,
+  "reason": "no e6 rows"
+ },
+ "started_unix": 1791381817.157636,
+ "elapsed_seconds": 4.793,
+ "n_points": 1,
+ "n_rows": 3,
+ "methods": [
+  "fedrevoke",
+  "full_rebuild",
+  "full_rebuild_reencode"
+ ],
+ "point_keys": [
+  "rerun_reenc|ds1|s5|rev0.05|sh0.10|full|knnNone|simNone|a0.50|nNone|sd20260214"
+ ],
+ "csv": {
+  "all": "E:\\学习作业\\academic\\computing\\submission\\code\\artifacts\\results\\rerun_reenc.csv",
+  "rows": "E:\\学习作业\\academic\\computing\\submission\\code\\artifacts\\results\\rerun_reenc\\rows.csv",
+  "main": "E:\\学习作业\\academic\\computing\\submission\\code\\artifacts\\results\\rerun_reenc\\main.csv"
+ },
+ "environment": {
+  "python": "3.14.7",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "numpy": "2.5.3",
+  "pandas": true,
+  "yaml": true,
+  "torch": true,
+  "faiss": true,
+  "hnswlib": true,
+  "transformers": true,
+  "peft": true,
+  "matplotlib": true,
+  "matplotlib_note": "未安装 matplotlib（禁止 pip install）→ 使用内置无依赖 PDF/PNG 绘图后端"
+ },
+ "data_status": {
+  "ds1": {
+   "ds_key": "ds1",
+   "name": "multihoprag",
+   "dir": "E:\\学习作业\\academic\\computing\\submission\\code\\data\\processed\\multihoprag",
+   "exists": true,
+   "files": {
+    "corpus.jsonl": true,
+    "queries.jsonl": true,
+    "forget_sets.json": true,
+    "shadow_pairs.json": true,
+    "embeddings": true,
+    "minhash_sig.npy": true,
+    "query_embeddings": true
+   },
+   "embeddings_file": "embeddings_bge-small-en-v1.5.npy",
+   "query_embeddings_file": "embeddings_queries_bge-small-en-v1.5.npy",
+   "query_embeddings_path": "E:\\学习作业\\academic\\computing\\submission\\code\\data\\processed\\multihoprag\\embeddings_queries_bge-small-en-v1.5.npy",
+   "missing": [],
+   "query_vector_source": "file:E:\\学习作业\\academic\\computing\\submission\\code\\data\\processed\\multihoprag\\embeddings_queries_bge-small-en-v1.5.npy",
+   "query_families": {
+    "official": 500
+   },
+   "mean_gold_size": 41.088,
+   "primary_metric": "ndcg10",
+   "shadow_map_source": "pid_meta.json",
+   "n_shadowed_docs": 183
+  },
+  "ds2": {
+   "ds_key": "ds2",
+   "name": "nq",
+   "dir": "E:\\学习作业\\academic\\computing\\submission\\code\\data\\processed\\nq",
+   "exists": false,
+   "files": {},
+   "missing": [
+    "<dataset dir>"
+   ]
+  },
+  "ds3": {
+   "ds_key": "ds3",
+   "name": "trec-covid",
+   "dir": "E:\\学习作业\\academic\\computing\\submission\\code\\data\\processed\\trec-covid",
+   "exists": false,
+   "files": {},
+   "missing": [
+    "<dataset dir>"
+   ]
+  }
+ },
+ "real_data_missing": {
+  "ds2": [
+   "<dataset dir>"
+  ],
+  "ds3": [
+   "<dataset dir>"
+  ]
+ },
+ "degradations": [],
+ "skipped": [],
+ "aggregates_by_method": [
+  {
+   "method": "fedrevoke",
+   "n": 1,
+   "hit_rate_mean": 0.0,
+   "hit_rate_std": 0.0,
+   "mia_auc_mean": 0.17703977772887325,
+   "mia_auc_std": 0.0,
+   "elicit_rate_mean": 0.0,
+   "elicit_rate_std": 0.0,
+   "rho_hat_mean": 0.5,
+   "rho_hat_std": 0.0,
+   "surrogate_hit_rate_mean": NaN,
+   "surrogate_hit_rate_std": 0.0,
+   "recall10_mean": 0.11465150485254873,
+   "recall10_std": 0.0,
+   "ndcg10_mean": 0.43614855624993126,
+   "ndcg10_std": 0.0,
+   "em_mean": 0.0,
+   "em_std": 0.0,
+   "f1_mean": 0.0,
+   "f1_std": 0.0,
+   "reindex_seconds_mean": 0.17418479995103553,
+   "reindex_seconds_std": 0.0,
+   "bytes_transferred_mean": 970752.0,
+   "bytes_transferred_std": 0.0,
+   "peak_vram_mb_mean": 0.0,
+   "peak_vram_mb_std": 0.0,
+   "n_vectors_touched_mean": 632.0,
+   "n_vectors_touched_std": 0.0
+  },
+  {
+   "method": "full_rebuild",
+   "n": 1,
+   "hit_rate_mean": 0.0,
+   "hit_rate_std": 0.0,
+   "mia_auc_mean": 0.2024925927996422,
+   "mia_auc_std": 0.0,
+   "elicit_rate_mean": 0.0,
+   "elicit_rate_std": 0.0,
+   "rho_hat_mean": 0.09999999999999998,
+   "rho_hat_std": 0.0,
+   "surrogate_hit_rate_mean": 0.012,
+   "surrogate_hit_rate_std": 0.0,
+   "recall10_mean": 0.11627149797556115,
+   "recall10_std": 0.0,
+   "ndcg10_mean": 0.4438451743763851,
+   "ndcg10_std": 0.0,
+   "em_mean": 0.0,
+   "em_std": 0.0,
+   "f1_mean": 0.0,
+   "f1_std": 0.0,
+   "reindex_seconds_mean": 0.06376510002883151,
+   "reindex_seconds_std": 0.0,
+   "bytes_transferred_mean": 16667136.0,
+   "bytes_transferred_std": 0.0,
+   "peak_vram_mb_mean": 0.0,
+   "peak_vram_mb_std": 0.0,
+   "n_vectors_touched_mean": 10851.0,
+   "n_vectors_touched_std": 0.0
+  },
+  {
+   "method": "full_rebuild_reencode",
+   "n": 1,
+   "hit_rate_mean": 0.0,
+   "hit_rate_std": 0.0,
+   "mia_auc_mean": 0.2024925927996422,
+   "mia_auc_std": 0.0,
+   "elicit_rate_mean": 0.0,
+   "elicit_rate_std": 0.0,
+   "rho_hat_mean": 0.09999999999999998,
+   "rho_hat_std": 0.0,
+   "surrogate_hit_rate_mean": 0.012,
+   "surrogate_hit_rate_std": 0.0,
+   "recall10_mean": 0.11627149797556115,
+   "recall10_std": 0.0,
+   "ndcg10_mean": 0.4438451743763851,
+   "ndcg10_std": 0.0,
+   "em_mean": 0.0,
+   "em_std": 0.0,
+   "f1_mean": 0.0,
+   "f1_std": 0.0,
+   "reindex_seconds_mean": 5.290976799984929,
+   "reindex_seconds_std": 0.0,
+   "bytes_transferred_mean": 16667136.0,
+   "bytes_transferred_std": 0.0,
+   "peak_vram_mb_mean": 0.0,
+   "peak_vram_mb_std": 0.0,
+   "n_vectors_touched_mean": 10851.0,
+   "n_vectors_touched_std": 0.0
+  }
+ ],
+ "aggregates_by_method_shadow": [
+  {
+   "method": "fedrevoke",
+   "shadow_ratio": 0.1,
+   "n": 1,
+   "hit_rate_mean": 0.0,
+   "hit_rate_std": 0.0,
+   "mia_auc_mean": 0.17703977772887325,
+   "mia_auc_std": 0.0,
+   "elicit_rate_mean": 0.0,
+   "elicit_rate_std": 0.0,
+   "rho_hat_mean": 0.5,
+   "rho_hat_std": 0.0,
+   "surrogate_hit_rate_mean": NaN,
+   "surrogate_hit_rate_std": 0.0,
+   "recall10_mean": 0.11465150485254873,
+   "recall10_std": 0.0,
+   "ndcg10_mean": 0.43614855624993126,
+   "ndcg10_std": 0.0,
+   "em_mean": 0.0,
+   "em_std": 0.0,
+   "f1_mean": 0.0,
+   "f1_std": 0.0,
+   "reindex_seconds_mean": 0.17418479995103553,
+   "reindex_seconds_std": 0.0,
+   "bytes_transferred_mean": 970752.0,
+   "bytes_transferred_std": 0.0,
+   "peak_vram_mb_mean": 0.0,
+   "peak_vram_mb_std": 0.0,
+   "n_vectors_touched_mean": 632.0,
+   "n_vectors_touched_std": 0.0
+  },
+  {
+   "method": "full_rebuild",
+   "shadow_ratio": 0.1,
+   "n": 1,
+   "hit_rate_mean": 0.0,
+   "hit_rate_std": 0.0,
+   "mia_auc_mean": 0.2024925927996422,
+   "mia_auc_std": 0.0,
+   "elicit_rate_mean": 0.0,
+   "elicit_rate_std": 0.0,
+   "rho_hat_mean": 0.09999999999999998,
+   "rho_hat_std": 0.0,
+   "surrogate_hit_rate_mean": 0.012,
+   "surrogate_hit_rate_std": 0.0,
+   "recall10_mean": 0.11627149797556115,
+   "recall10_std": 0.0,
+   "ndcg10_mean": 0.4438451743763851,
+   "ndcg10_std": 0.0,
+   "em_mean": 0.0,
+   "em_std": 0.0,
+   "f1_mean": 0.0,
+   "f1_std": 0.0,
+   "reindex_seconds_mean": 0.06376510002883151,
+   "reindex_seconds_std": 0.0,
+   "bytes_transferred_mean": 16667136.0,
+   "bytes_transferred_std": 0.0,
+   "peak_vram_mb_mean": 0.0,
+   "peak_vram_mb_std": 0.0,
+   "n_vectors_touched_mean": 10851.0,
+   "n_vectors_touched_std": 0.0
+  },
+  {
+   "method": "full_rebuild_reencode",
+   "shadow_ratio": 0.1,
+   "n": 1,
+   "hit_rate_mean": 0.0,
+   "hit_rate_std": 0.0,
+   "mia_auc_mean": 0.2024925927996422,
+   "mia_auc_std": 0.0,
+   "elicit_rate_mean": 0.0,
+   "elicit_rate_std": 0.0,
+   "rho_hat_mean": 0.09999999999999998,
+   "rho_hat_std": 0.0,
+   "surrogate_hit_rate_mean": 0.012,
+   "surrogate_hit_rate_std": 0.0,
+   "recall10_mean": 0.11627149797556115,
+   "recall10_std": 0.0,
+   "ndcg10_mean": 0.4438451743763851,
+   "ndcg10_std": 0.0,
+   "em_mean": 0.0,
+   "em_std": 0.0,
+   "f1_mean": 0.0,
+   "f1_std": 0.0,
+   "reindex_seconds_mean": 5.290976799984929,
+   "reindex_seconds_std": 0.0,
+   "bytes_transferred_mean": 16667136.0,
+   "bytes_transferred_std": 0.0,
+   "peak_vram_mb_mean": 0.0,
+   "peak_vram_mb_std": 0.0,
+   "n_vectors_touched_mean": 10851.0,
+   "n_vectors_touched_std": 0.0
+  }
+ ],
+ "stage_seconds": [
+  {
+   "point": "rerun_reenc|ds1|s5|rev0.05|sh0.10|full|knnNone|simNone|a0.50|nNone|sd20260214",
+   "stage": "main",
+   "status": "ok",
+   "seconds": 4.780646400002297,
+   "dataset": "multihoprag",
+   "n_docs": 11410,
+   "n_forget_docs": 30,
+   "coverage": {
+    "coverage_requested": null,
+    "coverage_actual": NaN,
+    "n_shadowed_pool": 183,
+    "source": "forget_sets",
+    "requester_client": "c1"
+   },
+   "fingerprint": {
+    "checked": true,
+    "degraded": false,
+    "counts": {
+     "provided": 11410
+    },
+    "n_alive": 11410,
+    "median_sig_len": 64,
+    "hint": "",
+    "context": "rerun_reenc|ds1"
+   }
+  }
+ ],
+ "notes": [
+  "smoke 模式为现场合成数据 + MockGenerator，规模小、绝对代价数值不代表真实规模",
+  "hit_rate 结构性为 0（index_core 保证 search() 不返回已删除 id）；区分方法优劣的是 elicit_rate / surrogate_hit_rate",
+  "INTERFACES §11：shadow_ratio>0 时签名矩阵必须注入；digest 指纹在 full 模式下 fail-fast"
+ ],
+ "figures": {
+  "e6_motivation": {
+   "pdf": "E:\\学习作业\\academic\\computing\\submission\\code\\artifacts\\figures\\rerun_reenc_e6_motivation.pdf",
+   "png": "E:\\学习作业\\academic\\computing\\submission\\code\\artifacts\\figures\\rerun_reenc_e6_motivation.png",
+   "backend": "matplotlib"
+  },
+  "e6_query_families": {
+   "pdf": "E:\\学习作业\\academic\\computing\\submission\\code\\artifacts\\figures\\rerun_reenc_e6_query_families.pdf",
+   "png": "E:\\学习作业\\academic\\computing\\submission\\code\\artifacts\\figures\\rerun_reenc_e6_query_families.png",
+   "backend": "matplotlib"
+  },
+  "e5_pareto": {
+   "pdf": "E:\\学习作业\\academic\\computing\\submission\\code\\artifacts\\figures\\rerun_reenc_e5_pareto.pdf",
+   "png": "E:\\学习作业\\academic\\computing\\submission\\code\\artifacts\\figures\\rerun_reenc_e5_pareto.png",
+   "backend": "matplotlib",
+   "time_pdf": "E:\\学习作业\\academic\\computing\\submission\\code\\artifacts\\figures\\rerun_reenc_time_e5_pareto.pdf",
+   "time_png": "E:\\学习作业\\academic\\computing\\submission\\code\\artifacts\\figures\\rerun_reenc_time_e5_pareto.png"
+  }
+ },
+ "rho_hat": {
+  "rho_hat_tv_mean": 0.2333333333333333,
+  "rho_hat_conservative_mean": 0.2333333333333333,
+  "definition": "rho_hat_tv/rho_hat_ret = 式(18) max_q [1-|R_k(q;I')∩R_k(q;I∅)|/k]，oracle 侧 I∅ = 删去种子∪注入影子后重建；rho_hat = max(rho_hat_ret, elicit_rate)（Definition 1 操作化）；rho_hat_conservative/rho_hat_bound = max(hit_rate, elicit_rate)（无 oracle 保守上界）",
+  "used_in_results_section": "rho_hat_ret + rho_hat_bound"
+ },
+ "q_unrel": {
+  "definition": "Q_unrel = { q : gold_pids(q) ∩ deletion_closure = ∅ }；Δ_util 只在该子集上评估",
+  "cells": [
+   {
+    "method": "fedrevoke",
+    "n_unrel": 449,
+    "reliable": true
+   },
+   {
+    "method": "full_rebuild",
+    "n_unrel": 449,
+    "reliable": true
+   },
+   {
+    "method": "full_rebuild_reencode",
+    "n_unrel": 449,
+    "reliable": true
+   }
+  ],
+  "min_n_threshold": 50,
+  "unreliable_cells": []
+ }
+}

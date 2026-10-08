@@ -24,7 +24,7 @@ classifiers = [
 ]
 
 # Runtime deps are pinned in requirements.txt (they include CUDA-specific torch
-# wheels). Keep this list deliberately empty so that \`pip install -e . --no-deps\`
+# wheels). Keep this list deliberately empty so that `pip install -e . --no-deps`
 # works on a machine that has no GPU, and point users at requirements.txt instead.
 dependencies = []
 
@@ -32,7 +32,7 @@ dependencies = []
 test = ["pytest>=8"]
 
 [project.urls]
-Repository = "https://github.com/REPLACE-WITH-YOUR-ACCOUNT/FedRevoke"
+Repository = "https://github.com/NUAApanda-1116/Shadow-Aware-Retrieval-Level-Forgetting"
 
 [tool.setuptools.packages.find]
 where = ["src"]

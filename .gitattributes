@@ -1,0 +1,20 @@
+* text=auto eol=lf
+
+# Keep the shipped numeric artefacts binary and un-diffed.
+*.npy   binary
+*.npz   binary
+*.pfb   binary
+*.tfm   binary
+*.png   binary
+*.pdf   binary
+
+# LaTeX sources must keep LF so that latexmk/TeX Live behave identically on
+# Windows and Linux.
+*.tex   text eol=lf
+*.bib   text eol=lf
+*.cls   text eol=lf
+*.bst   text eol=lf
+
+# GitHub language statistics: the released release is mostly data.
+data/** linguist-vendored
+artifacts/** linguist-generated

@@ -40,8 +40,15 @@ python -m venv .venv
 
 `data/processed/multihoprag/` 里就是论文承诺释放的那些文件：段落 id
 （`pid_meta.json`）、孤岛划分（`silo_assignments.json`）、注入影子对及其
-相似度记录（`shadow_pairs.json`）、forget set（`forget_sets.json`）、
-预计算嵌入、以及 MinHash 签名矩阵（`minhash_sig.npy`）。
+相似度记录（`shadow_pairs.json`）、forget set（`forget_sets.json`），以及参数记录
+（`minhash_meta.json`、`embedding_meta.json`）。
+
+预计算嵌入与 MinHash 签名矩阵（`minhash_sig.npy`）**刻意不随仓库发布**：二者均可重建，
+且原始矩阵体积较大（DS1 26 MB，DS2 约 320 MB，DS3 约 690 MB）。它们都是 master seed
+`20260214` 与上述参数记录的确定性函数，执行
+`python -m fedrevoke.data_prep --datasets ds1 --silos 5 10` 即可在划分文件旁重建。
+不同硬件上的重新编码可能改变嵌入的末几位比特，因此闭包成员关系在报告的工作点上可复现，
+而非逐位一致。
 
 原始语料见 [data/raw/README.md](data/raw/README.md)（含下载脚本的一处已知路径 bug）。
 
@@ -101,7 +108,7 @@ artifacts/       results / logs / certificates（图在生成后落到 artifacts
 
 ---
 
-## 7. 复现论文表格前请先看
+## 6. 复现论文表格前请先看
 
 本仓库 **只附带了一部分实验结果**（DS1 的 E1/E6 网格 + 冒烟跑），
 表 II、III、IV、V 与图 2、3 所需的数据不在仓库里。逐项对照如下：

@@ -1,0 +1,814 @@
+{
+ "exp": "rerun_e7",
+ "config_path": "E:\\学习作业\\academic\\computing\\submission\\code\\configs\\e1_main.yaml",
+ "mode": "full",
+ "tier": "a",
+ "model": "1.5b",
+ "model_id": "NoneType",
+ "generator": "NoneType",
+ "generator_backend": "none",
+ "n_queries_eval": 500,
+ "stages": [
+  "e7"
+ ],
+ "dataset_status": {
+  "ds1": {
+   "name": "multihoprag",
+   "exists": true,
+   "missing": [],
+   "query_vector_source": "file:E:\\学习作业\\academic\\computing\\submission\\code\\data\\processed\\multihoprag\\embeddings_queries_bge-small-en-v1.5.npy",
+   "shadow_map_source": "pid_meta.json",
+   "n_shadowed_docs": 183
+  },
+  "ds2": {
+   "name": "nq",
+   "exists": false,
+   "missing": [
+    "<dataset dir>"
+   ]
+  },
+  "ds3": {
+   "name": "trec-covid",
+   "exists": false,
+   "missing": [
+    "<dataset dir>"
+   ]
+  }
+ },
+ "e6_monotonicity": {
+  "checked": false,
+  "reason": "no e6 rows"
+ },
+ "started_unix": 1791381117.4028878,
+ "elapsed_seconds": 10.484,
+ "n_points": 16,
+ "n_rows": 48,
+ "methods": [
+  "fedrevoke",
+  "full_rebuild",
+  "naive_delete",
+  "sisa",
+  "lora_finetune",
+  "tdsc_adapter"
+ ],
+ "point_keys": [
+  "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.85|a0.50|nNone|sd20260214",
+  "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.85|a0.50|nNone|sd20260214",
+  "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.85|a0.50|nNone|sd20260214",
+  "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.85|a0.50|nNone|sd20260214",
+  "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.9|a0.50|nNone|sd20260214",
+  "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.9|a0.50|nNone|sd20260214",
+  "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.9|a0.50|nNone|sd20260214",
+  "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.9|a0.50|nNone|sd20260214",
+  "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.92|a0.50|nNone|sd20260214",
+  "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.92|a0.50|nNone|sd20260214",
+  "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.92|a0.50|nNone|sd20260214",
+  "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.92|a0.50|nNone|sd20260214",
+  "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.95|a0.50|nNone|sd20260214",
+  "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.95|a0.50|nNone|sd20260214",
+  "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.95|a0.50|nNone|sd20260214",
+  "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.95|a0.50|nNone|sd20260214"
+ ],
+ "csv": {
+  "all": "E:\\学习作业\\academic\\computing\\submission\\code\\artifacts\\results\\rerun_e7.csv",
+  "rows": "E:\\学习作业\\academic\\computing\\submission\\code\\artifacts\\results\\rerun_e7\\rows.csv",
+  "e7": "E:\\学习作业\\academic\\computing\\submission\\code\\artifacts\\results\\rerun_e7\\e7.csv"
+ },
+ "environment": {
+  "python": "3.14.7",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "numpy": "2.5.3",
+  "pandas": true,
+  "yaml": true,
+  "torch": true,
+  "faiss": true,
+  "hnswlib": true,
+  "transformers": true,
+  "peft": true,
+  "matplotlib": true,
+  "matplotlib_note": "未安装 matplotlib（禁止 pip install）→ 使用内置无依赖 PDF/PNG 绘图后端"
+ },
+ "data_status": {
+  "ds1": {
+   "ds_key": "ds1",
+   "name": "multihoprag",
+   "dir": "E:\\学习作业\\academic\\computing\\submission\\code\\data\\processed\\multihoprag",
+   "exists": true,
+   "files": {
+    "corpus.jsonl": true,
+    "queries.jsonl": true,
+    "forget_sets.json": true,
+    "shadow_pairs.json": true,
+    "embeddings": true,
+    "minhash_sig.npy": true,
+    "query_embeddings": true
+   },
+   "embeddings_file": "embeddings_bge-small-en-v1.5.npy",
+   "query_embeddings_file": "embeddings_queries_bge-small-en-v1.5.npy",
+   "query_embeddings_path": "E:\\学习作业\\academic\\computing\\submission\\code\\data\\processed\\multihoprag\\embeddings_queries_bge-small-en-v1.5.npy",
+   "missing": [],
+   "query_vector_source": "file:E:\\学习作业\\academic\\computing\\submission\\code\\data\\processed\\multihoprag\\embeddings_queries_bge-small-en-v1.5.npy",
+   "query_families": {
+    "official": 500
+   },
+   "mean_gold_size": 41.088,
+   "primary_metric": "ndcg10",
+   "shadow_map_source": "pid_meta.json",
+   "n_shadowed_docs": 183
+  },
+  "ds2": {
+   "ds_key": "ds2",
+   "name": "nq",
+   "dir": "E:\\学习作业\\academic\\computing\\submission\\code\\data\\processed\\nq",
+   "exists": false,
+   "files": {},
+   "missing": [
+    "<dataset dir>"
+   ]
+  },
+  "ds3": {
+   "ds_key": "ds3",
+   "name": "trec-covid",
+   "dir": "E:\\学习作业\\academic\\computing\\submission\\code\\data\\processed\\trec-covid",
+   "exists": false,
+   "files": {},
+   "missing": [
+    "<dataset dir>"
+   ]
+  }
+ },
+ "real_data_missing": {
+  "ds2": [
+   "<dataset dir>"
+  ],
+  "ds3": [
+   "<dataset dir>"
+  ]
+ },
+ "degradations": [],
+ "skipped": [],
+ "aggregates_by_method": [
+  {
+   "method": "detect_dual",
+   "n": 16,
+   "hit_rate_mean": 0.9969262295081966,
+   "hit_rate_std": 0.008189603011121456,
+   "mia_auc_mean": NaN,
+   "mia_auc_std": 0.0,
+   "elicit_rate_mean": NaN,
+   "elicit_rate_std": 0.0,
+   "rho_hat_mean": NaN,
+   "rho_hat_std": 0.0,
+   "surrogate_hit_rate_mean": NaN,
+   "surrogate_hit_rate_std": 0.0,
+   "recall10_mean": NaN,
+   "recall10_std": 0.0,
+   "ndcg10_mean": NaN,
+   "ndcg10_std": 0.0,
+   "em_mean": NaN,
+   "em_std": 0.0,
+   "f1_mean": NaN,
+   "f1_std": 0.0,
+   "reindex_seconds_mean": NaN,
+   "reindex_seconds_std": 0.0,
+   "bytes_transferred_mean": NaN,
+   "bytes_transferred_std": 0.0,
+   "peak_vram_mb_mean": NaN,
+   "peak_vram_mb_std": 0.0,
+   "n_vectors_touched_mean": NaN,
+   "n_vectors_touched_std": 0.0
+  },
+  {
+   "method": "detect_text_only",
+   "n": 16,
+   "hit_rate_mean": 0.8346994535519126,
+   "hit_rate_std": 0.21838703981902982,
+   "mia_auc_mean": NaN,
+   "mia_auc_std": 0.0,
+   "elicit_rate_mean": NaN,
+   "elicit_rate_std": 0.0,
+   "rho_hat_mean": NaN,
+   "rho_hat_std": 0.0,
+   "surrogate_hit_rate_mean": NaN,
+   "surrogate_hit_rate_std": 0.0,
+   "recall10_mean": NaN,
+   "recall10_std": 0.0,
+   "ndcg10_mean": NaN,
+   "ndcg10_std": 0.0,
+   "em_mean": NaN,
+   "em_std": 0.0,
+   "f1_mean": NaN,
+   "f1_std": 0.0,
+   "reindex_seconds_mean": NaN,
+   "reindex_seconds_std": 0.0,
+   "bytes_transferred_mean": NaN,
+   "bytes_transferred_std": 0.0,
+   "peak_vram_mb_mean": NaN,
+   "peak_vram_mb_std": 0.0,
+   "n_vectors_touched_mean": NaN,
+   "n_vectors_touched_std": 0.0
+  },
+  {
+   "method": "detect_vector_only",
+   "n": 16,
+   "hit_rate_mean": 0.9849726775956285,
+   "hit_rate_std": 0.022981699236694953,
+   "mia_auc_mean": NaN,
+   "mia_auc_std": 0.0,
+   "elicit_rate_mean": NaN,
+   "elicit_rate_std": 0.0,
+   "rho_hat_mean": NaN,
+   "rho_hat_std": 0.0,
+   "surrogate_hit_rate_mean": NaN,
+   "surrogate_hit_rate_std": 0.0,
+   "recall10_mean": NaN,
+   "recall10_std": 0.0,
+   "ndcg10_mean": NaN,
+   "ndcg10_std": 0.0,
+   "em_mean": NaN,
+   "em_std": 0.0,
+   "f1_mean": NaN,
+   "f1_std": 0.0,
+   "reindex_seconds_mean": NaN,
+   "reindex_seconds_std": 0.0,
+   "bytes_transferred_mean": NaN,
+   "bytes_transferred_std": 0.0,
+   "peak_vram_mb_mean": NaN,
+   "peak_vram_mb_std": 0.0,
+   "n_vectors_touched_mean": NaN,
+   "n_vectors_touched_std": 0.0
+  }
+ ],
+ "aggregates_by_method_shadow": [
+  {
+   "method": "detect_dual",
+   "shadow_ratio": 0.0,
+   "n": 16,
+   "hit_rate_mean": 0.9969262295081966,
+   "hit_rate_std": 0.008189603011121456,
+   "mia_auc_mean": NaN,
+   "mia_auc_std": 0.0,
+   "elicit_rate_mean": NaN,
+   "elicit_rate_std": 0.0,
+   "rho_hat_mean": NaN,
+   "rho_hat_std": 0.0,
+   "surrogate_hit_rate_mean": NaN,
+   "surrogate_hit_rate_std": 0.0,
+   "recall10_mean": NaN,
+   "recall10_std": 0.0,
+   "ndcg10_mean": NaN,
+   "ndcg10_std": 0.0,
+   "em_mean": NaN,
+   "em_std": 0.0,
+   "f1_mean": NaN,
+   "f1_std": 0.0,
+   "reindex_seconds_mean": NaN,
+   "reindex_seconds_std": 0.0,
+   "bytes_transferred_mean": NaN,
+   "bytes_transferred_std": 0.0,
+   "peak_vram_mb_mean": NaN,
+   "peak_vram_mb_std": 0.0,
+   "n_vectors_touched_mean": NaN,
+   "n_vectors_touched_std": 0.0
+  },
+  {
+   "method": "detect_text_only",
+   "shadow_ratio": 0.0,
+   "n": 16,
+   "hit_rate_mean": 0.8346994535519126,
+   "hit_rate_std": 0.21838703981902982,
+   "mia_auc_mean": NaN,
+   "mia_auc_std": 0.0,
+   "elicit_rate_mean": NaN,
+   "elicit_rate_std": 0.0,
+   "rho_hat_mean": NaN,
+   "rho_hat_std": 0.0,
+   "surrogate_hit_rate_mean": NaN,
+   "surrogate_hit_rate_std": 0.0,
+   "recall10_mean": NaN,
+   "recall10_std": 0.0,
+   "ndcg10_mean": NaN,
+   "ndcg10_std": 0.0,
+   "em_mean": NaN,
+   "em_std": 0.0,
+   "f1_mean": NaN,
+   "f1_std": 0.0,
+   "reindex_seconds_mean": NaN,
+   "reindex_seconds_std": 0.0,
+   "bytes_transferred_mean": NaN,
+   "bytes_transferred_std": 0.0,
+   "peak_vram_mb_mean": NaN,
+   "peak_vram_mb_std": 0.0,
+   "n_vectors_touched_mean": NaN,
+   "n_vectors_touched_std": 0.0
+  },
+  {
+   "method": "detect_vector_only",
+   "shadow_ratio": 0.0,
+   "n": 16,
+   "hit_rate_mean": 0.9849726775956285,
+   "hit_rate_std": 0.022981699236694953,
+   "mia_auc_mean": NaN,
+   "mia_auc_std": 0.0,
+   "elicit_rate_mean": NaN,
+   "elicit_rate_std": 0.0,
+   "rho_hat_mean": NaN,
+   "rho_hat_std": 0.0,
+   "surrogate_hit_rate_mean": NaN,
+   "surrogate_hit_rate_std": 0.0,
+   "recall10_mean": NaN,
+   "recall10_std": 0.0,
+   "ndcg10_mean": NaN,
+   "ndcg10_std": 0.0,
+   "em_mean": NaN,
+   "em_std": 0.0,
+   "f1_mean": NaN,
+   "f1_std": 0.0,
+   "reindex_seconds_mean": NaN,
+   "reindex_seconds_std": 0.0,
+   "bytes_transferred_mean": NaN,
+   "bytes_transferred_std": 0.0,
+   "peak_vram_mb_mean": NaN,
+   "peak_vram_mb_std": 0.0,
+   "n_vectors_touched_mean": NaN,
+   "n_vectors_touched_std": 0.0
+  }
+ ],
+ "stage_seconds": [
+  {
+   "point": "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.85|a0.50|nNone|sd20260214",
+   "stage": "e7",
+   "status": "ok",
+   "seconds": 1.0931097999564372,
+   "dataset": "multihoprag",
+   "n_docs": 11410,
+   "n_forget_docs": 30,
+   "coverage": {
+    "coverage_requested": null,
+    "coverage_actual": NaN,
+    "n_shadowed_pool": 183,
+    "source": "forget_sets",
+    "requester_client": "c1"
+   },
+   "fingerprint": {
+    "checked": true,
+    "degraded": false,
+    "counts": {
+     "provided": 11410
+    },
+    "n_alive": 11410,
+    "median_sig_len": 64,
+    "hint": "",
+    "context": "rerun_e7|ds1"
+   },
+   "n_rows": 3
+  },
+  {
+   "point": "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.85|a0.50|nNone|sd20260214",
+   "stage": "e7",
+   "status": "ok",
+   "seconds": 0.7907705000252463,
+   "dataset": "multihoprag",
+   "n_docs": 11410,
+   "n_forget_docs": 30,
+   "coverage": {
+    "coverage_requested": null,
+    "coverage_actual": NaN,
+    "n_shadowed_pool": 183,
+    "source": "forget_sets",
+    "requester_client": "c1"
+   },
+   "fingerprint": {
+    "checked": true,
+    "degraded": false,
+    "counts": {
+     "provided": 11410
+    },
+    "n_alive": 11410,
+    "median_sig_len": 64,
+    "hint": "",
+    "context": "rerun_e7|ds1"
+   },
+   "n_rows": 3
+  },
+  {
+   "point": "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.85|a0.50|nNone|sd20260214",
+   "stage": "e7",
+   "status": "ok",
+   "seconds": 0.7012366999988444,
+   "dataset": "multihoprag",
+   "n_docs": 11410,
+   "n_forget_docs": 30,
+   "coverage": {
+    "coverage_requested": null,
+    "coverage_actual": NaN,
+    "n_shadowed_pool": 183,
+    "source": "forget_sets",
+    "requester_client": "c1"
+   },
+   "fingerprint": {
+    "checked": true,
+    "degraded": false,
+    "counts": {
+     "provided": 11410
+    },
+    "n_alive": 11410,
+    "median_sig_len": 64,
+    "hint": "",
+    "context": "rerun_e7|ds1"
+   },
+   "n_rows": 3
+  },
+  {
+   "point": "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.85|a0.50|nNone|sd20260214",
+   "stage": "e7",
+   "status": "ok",
+   "seconds": 0.6449876000406221,
+   "dataset": "multihoprag",
+   "n_docs": 11410,
+   "n_forget_docs": 30,
+   "coverage": {
+    "coverage_requested": null,
+    "coverage_actual": NaN,
+    "n_shadowed_pool": 183,
+    "source": "forget_sets",
+    "requester_client": "c1"
+   },
+   "fingerprint": {
+    "checked": true,
+    "degraded": false,
+    "counts": {
+     "provided": 11410
+    },
+    "n_alive": 11410,
+    "median_sig_len": 64,
+    "hint": "",
+    "context": "rerun_e7|ds1"
+   },
+   "n_rows": 3
+  },
+  {
+   "point": "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.9|a0.50|nNone|sd20260214",
+   "stage": "e7",
+   "status": "ok",
+   "seconds": 0.6812810999690555,
+   "dataset": "multihoprag",
+   "n_docs": 11410,
+   "n_forget_docs": 30,
+   "coverage": {
+    "coverage_requested": null,
+    "coverage_actual": NaN,
+    "n_shadowed_pool": 183,
+    "source": "forget_sets",
+    "requester_client": "c1"
+   },
+   "fingerprint": {
+    "checked": true,
+    "degraded": false,
+    "counts": {
+     "provided": 11410
+    },
+    "n_alive": 11410,
+    "median_sig_len": 64,
+    "hint": "",
+    "context": "rerun_e7|ds1"
+   },
+   "n_rows": 3
+  },
+  {
+   "point": "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.9|a0.50|nNone|sd20260214",
+   "stage": "e7",
+   "status": "ok",
+   "seconds": 0.6023672000155784,
+   "dataset": "multihoprag",
+   "n_docs": 11410,
+   "n_forget_docs": 30,
+   "coverage": {
+    "coverage_requested": null,
+    "coverage_actual": NaN,
+    "n_shadowed_pool": 183,
+    "source": "forget_sets",
+    "requester_client": "c1"
+   },
+   "fingerprint": {
+    "checked": true,
+    "degraded": false,
+    "counts": {
+     "provided": 11410
+    },
+    "n_alive": 11410,
+    "median_sig_len": 64,
+    "hint": "",
+    "context": "rerun_e7|ds1"
+   },
+   "n_rows": 3
+  },
+  {
+   "point": "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.9|a0.50|nNone|sd20260214",
+   "stage": "e7",
+   "status": "ok",
+   "seconds": 0.5548794000060298,
+   "dataset": "multihoprag",
+   "n_docs": 11410,
+   "n_forget_docs": 30,
+   "coverage": {
+    "coverage_requested": null,
+    "coverage_actual": NaN,
+    "n_shadowed_pool": 183,
+    "source": "forget_sets",
+    "requester_client": "c1"
+   },
+   "fingerprint": {
+    "checked": true,
+    "degraded": false,
+    "counts": {
+     "provided": 11410
+    },
+    "n_alive": 11410,
+    "median_sig_len": 64,
+    "hint": "",
+    "context": "rerun_e7|ds1"
+   },
+   "n_rows": 3
+  },
+  {
+   "point": "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.9|a0.50|nNone|sd20260214",
+   "stage": "e7",
+   "status": "ok",
+   "seconds": 0.5316208000294864,
+   "dataset": "multihoprag",
+   "n_docs": 11410,
+   "n_forget_docs": 30,
+   "coverage": {
+    "coverage_requested": null,
+    "coverage_actual": NaN,
+    "n_shadowed_pool": 183,
+    "source": "forget_sets",
+    "requester_client": "c1"
+   },
+   "fingerprint": {
+    "checked": true,
+    "degraded": false,
+    "counts": {
+     "provided": 11410
+    },
+    "n_alive": 11410,
+    "median_sig_len": 64,
+    "hint": "",
+    "context": "rerun_e7|ds1"
+   },
+   "n_rows": 3
+  },
+  {
+   "point": "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.92|a0.50|nNone|sd20260214",
+   "stage": "e7",
+   "status": "ok",
+   "seconds": 0.6913112999754958,
+   "dataset": "multihoprag",
+   "n_docs": 11410,
+   "n_forget_docs": 30,
+   "coverage": {
+    "coverage_requested": null,
+    "coverage_actual": NaN,
+    "n_shadowed_pool": 183,
+    "source": "forget_sets",
+    "requester_client": "c1"
+   },
+   "fingerprint": {
+    "checked": true,
+    "degraded": false,
+    "counts": {
+     "provided": 11410
+    },
+    "n_alive": 11410,
+    "median_sig_len": 64,
+    "hint": "",
+    "context": "rerun_e7|ds1"
+   },
+   "n_rows": 3
+  },
+  {
+   "point": "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.92|a0.50|nNone|sd20260214",
+   "stage": "e7",
+   "status": "ok",
+   "seconds": 0.6154588999925181,
+   "dataset": "multihoprag",
+   "n_docs": 11410,
+   "n_forget_docs": 30,
+   "coverage": {
+    "coverage_requested": null,
+    "coverage_actual": NaN,
+    "n_shadowed_pool": 183,
+    "source": "forget_sets",
+    "requester_client": "c1"
+   },
+   "fingerprint": {
+    "checked": true,
+    "degraded": false,
+    "counts": {
+     "provided": 11410
+    },
+    "n_alive": 11410,
+    "median_sig_len": 64,
+    "hint": "",
+    "context": "rerun_e7|ds1"
+   },
+   "n_rows": 3
+  },
+  {
+   "point": "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.92|a0.50|nNone|sd20260214",
+   "stage": "e7",
+   "status": "ok",
+   "seconds": 0.5475787000032142,
+   "dataset": "multihoprag",
+   "n_docs": 11410,
+   "n_forget_docs": 30,
+   "coverage": {
+    "coverage_requested": null,
+    "coverage_actual": NaN,
+    "n_shadowed_pool": 183,
+    "source": "forget_sets",
+    "requester_client": "c1"
+   },
+   "fingerprint": {
+    "checked": true,
+    "degraded": false,
+    "counts": {
+     "provided": 11410
+    },
+    "n_alive": 11410,
+    "median_sig_len": 64,
+    "hint": "",
+    "context": "rerun_e7|ds1"
+   },
+   "n_rows": 3
+  },
+  {
+   "point": "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.92|a0.50|nNone|sd20260214",
+   "stage": "e7",
+   "status": "ok",
+   "seconds": 0.5131454999791458,
+   "dataset": "multihoprag",
+   "n_docs": 11410,
+   "n_forget_docs": 30,
+   "coverage": {
+    "coverage_requested": null,
+    "coverage_actual": NaN,
+    "n_shadowed_pool": 183,
+    "source": "forget_sets",
+    "requester_client": "c1"
+   },
+   "fingerprint": {
+    "checked": true,
+    "degraded": false,
+    "counts": {
+     "provided": 11410
+    },
+    "n_alive": 11410,
+    "median_sig_len": 64,
+    "hint": "",
+    "context": "rerun_e7|ds1"
+   },
+   "n_rows": 3
+  },
+  {
+   "point": "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.95|a0.50|nNone|sd20260214",
+   "stage": "e7",
+   "status": "ok",
+   "seconds": 0.6891392999677919,
+   "dataset": "multihoprag",
+   "n_docs": 11410,
+   "n_forget_docs": 30,
+   "coverage": {
+    "coverage_requested": null,
+    "coverage_actual": NaN,
+    "n_shadowed_pool": 183,
+    "source": "forget_sets",
+    "requester_client": "c1"
+   },
+   "fingerprint": {
+    "checked": true,
+    "degraded": false,
+    "counts": {
+     "provided": 11410
+    },
+    "n_alive": 11410,
+    "median_sig_len": 64,
+    "hint": "",
+    "context": "rerun_e7|ds1"
+   },
+   "n_rows": 3
+  },
+  {
+   "point": "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.95|a0.50|nNone|sd20260214",
+   "stage": "e7",
+   "status": "ok",
+   "seconds": 0.6257522999658249,
+   "dataset": "multihoprag",
+   "n_docs": 11410,
+   "n_forget_docs": 30,
+   "coverage": {
+    "coverage_requested": null,
+    "coverage_actual": NaN,
+    "n_shadowed_pool": 183,
+    "source": "forget_sets",
+    "requester_client": "c1"
+   },
+   "fingerprint": {
+    "checked": true,
+    "degraded": false,
+    "counts": {
+     "provided": 11410
+    },
+    "n_alive": 11410,
+    "median_sig_len": 64,
+    "hint": "",
+    "context": "rerun_e7|ds1"
+   },
+   "n_rows": 3
+  },
+  {
+   "point": "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.95|a0.50|nNone|sd20260214",
+   "stage": "e7",
+   "status": "ok",
+   "seconds": 0.5617936000344343,
+   "dataset": "multihoprag",
+   "n_docs": 11410,
+   "n_forget_docs": 30,
+   "coverage": {
+    "coverage_requested": null,
+    "coverage_actual": NaN,
+    "n_shadowed_pool": 183,
+    "source": "forget_sets",
+    "requester_client": "c1"
+   },
+   "fingerprint": {
+    "checked": true,
+    "degraded": false,
+    "counts": {
+     "provided": 11410
+    },
+    "n_alive": 11410,
+    "median_sig_len": 64,
+    "hint": "",
+    "context": "rerun_e7|ds1"
+   },
+   "n_rows": 3
+  },
+  {
+   "point": "rerun_e7|ds1|s5|rev0.05|sh0.00|full|knnNone|sim0.95|a0.50|nNone|sd20260214",
+   "stage": "e7",
+   "status": "ok",
+   "seconds": 0.5188123999978416,
+   "dataset": "multihoprag",
+   "n_docs": 11410,
+   "n_forget_docs": 30,
+   "coverage": {
+    "coverage_requested": null,
+    "coverage_actual": NaN,
+    "n_shadowed_pool": 183,
+    "source": "forget_sets",
+    "requester_client": "c1"
+   },
+   "fingerprint": {
+    "checked": true,
+    "degraded": false,
+    "counts": {
+     "provided": 11410
+    },
+    "n_alive": 11410,
+    "median_sig_len": 64,
+    "hint": "",
+    "context": "rerun_e7|ds1"
+   },
+   "n_rows": 3
+  }
+ ],
+ "notes": [
+  "smoke 模式为现场合成数据 + MockGenerator，规模小、绝对代价数值不代表真实规模",
+  "hit_rate 结构性为 0（index_core 保证 search() 不返回已删除 id）；区分方法优劣的是 elicit_rate / surrogate_hit_rate",
+  "INTERFACES §11：shadow_ratio>0 时签名矩阵必须注入；digest 指纹在 full 模式下 fail-fast"
+ ],
+ "figures": {
+  "e7_channels": {
+   "tau_pdf": "E:\\学习作业\\academic\\computing\\submission\\code\\artifacts\\figures\\rerun_e7_e7_channels_tau.pdf",
+   "tau_png": "E:\\学习作业\\academic\\computing\\submission\\code\\artifacts\\figures\\rerun_e7_e7_channels_tau.png",
+   "tau_backend": "matplotlib",
+   "jaccard_pdf": "E:\\学习作业\\academic\\computing\\submission\\code\\artifacts\\figures\\rerun_e7_e7_channels_jaccard.pdf",
+   "jaccard_png": "E:\\学习作业\\academic\\computing\\submission\\code\\artifacts\\figures\\rerun_e7_e7_channels_jaccard.png",
+   "jaccard_backend": "matplotlib"
+  }
+ },
+ "rho_hat": {
+  "rho_hat_tv_mean": NaN,
+  "rho_hat_conservative_mean": NaN,
+  "definition": "rho_hat_tv/rho_hat_ret = 式(18) max_q [1-|R_k(q;I')∩R_k(q;I∅)|/k]，oracle 侧 I∅ = 删去种子∪注入影子后重建；rho_hat = max(rho_hat_ret, elicit_rate)（Definition 1 操作化）；rho_hat_conservative/rho_hat_bound = max(hit_rate, elicit_rate)（无 oracle 保守上界）",
+  "used_in_results_section": "rho_hat_ret + rho_hat_bound"
+ },
+ "q_unrel": {
+  "definition": "Q_unrel = { q : gold_pids(q) ∩ deletion_closure = ∅ }；Δ_util 只在该子集上评估",
+  "cells": [],
+  "min_n_threshold": 50,
+  "unreliable_cells": []
+ }
+}

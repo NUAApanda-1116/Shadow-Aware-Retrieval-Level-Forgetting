@@ -1,35 +1,35 @@
-"""run_experiments.py -- FedRevoke experiment entry point (INTERFACES.md Section 10).
+"""run_experiments.py —— FedRevoke 实验总入口（INTERFACES.md §10）。
 
-Usage::
+用法::
 
     python -m fedrevoke.run_experiments --config configs/e1_main.yaml [--smoke] [--limit N]
 
-Outputs::
+输出::
 
-    artifacts/results/<exp>.csv          # self-explanatory column names (see CSV_REQUIRED_COLUMNS)
-    artifacts/results/<exp>_summary.json # config + aggregation + environment/degradation notes
-    artifacts/figures/<exp>_e6_motivation.{pdf,png}   # motivation figure: naive-delete residue vs shadow ratio
-    artifacts/figures/<exp>_e5_pareto.{pdf,png}       # cost Pareto: residual leakage vs reindexing cost
-    artifacts/logs/<exp>_run.json        # run log (includes warning/degradation)
+    artifacts/results/<exp>.csv          # 自解释列名（见 CSV_REQUIRED_COLUMNS）
+    artifacts/results/<exp>_summary.json # 配置 + 聚合 + 环境/降级说明
+    artifacts/figures/<exp>_e6_motivation.{pdf,png}   # 动机图：朴素删除残留 vs 影子比例
+    artifacts/figures/<exp>_e5_pareto.{pdf,png}       # 代价 Pareto：残留泄漏 vs 重索引代价
+    artifacts/logs/<exp>_run.json        # 运行日志（含 warning/degradation）
 
-Design notes
+设计要点
 --------
-* **synthetic mode (--smoke / dataset=synthetic)**: synthesize vectors and documents on the fly,
-  no network, no HF models loaded, no data/ reads; MockGenerator for generation-side evaluation; finishes within 60 seconds.
-* **Real-data mode**: reads data/processed/<ds>/ (corpus.jsonl / queries.jsonl / forget_sets.json /
-  shadow_pairs.json / embeddings_*.npy / minhash_sig.npy). When data is missing, **run smoke only**
-  and write the missing list into summary.json under data_status.
-* **INTERFACES Section 11 fingerprint ruling**: for any experiment with shadow_ratio > 0, take the signature matrix
-  via load_bundle(ds)["signatures"] -> np.load(ds/minhash_sig.npy),
-  inject it with ShadowDetector(signatures=...); after building the index call
-  RevocationPipeline.check_fingerprints() (internally calls detector.diagnose_fingerprints);
-  in full mode, digest fingerprints > 0 raise RuntimeError directly; --smoke prints a WARNING and continues.
-  Baselines B2/B5 use the same signature matrix to keep information parity.
-* **Plotting**: the local .venv has no matplotlib (and pip install is forbidden),
-  so a dependency-free plotting backend is built in: the same vector scene is output as
-  * PDF (vector segments + PDF standard Helvetica text, losslessly scalable, suitable for submission)
-  * PNG (300 dpi rasterization + built-in 5x7 bitmap font)
-  Error bars are drawn automatically when multiple seeds are available.
+* **synthetic 模式（--smoke / dataset=synthetic）**：现场合成向量与文档，
+  不联网、不加载任何 HF 模型、不读 data/；MockGenerator 做生成端评测；60 秒内跑完。
+* **真实数据模式**：读 data/processed/<ds>/（corpus.jsonl / queries.jsonl / forget_sets.json /
+  shadow_pairs.json / embeddings_*.npy / minhash_sig.npy）。数据缺失时**只跑 smoke**
+  并把缺失清单写入 summary.json 的 data_status。
+* **INTERFACES §11 指纹裁决**：凡 shadow_ratio > 0 的实验，用
+  load_bundle(ds)["signatures"] → np.load(ds/minhash_sig.npy) 的顺序取签名矩阵，
+  ShadowDetector(signatures=...) 注入；建索引后调用
+  RevocationPipeline.check_fingerprints()（内部走 detector.diagnose_fingerprints）；
+  full 模式 digest 指纹 > 0 直接 RuntimeError，--smoke 打印 WARNING 继续。
+  基线 B2/B5 走同一签名矩阵，保证信息对等。
+* **绘图**：本机 .venv 无 matplotlib（且禁止 pip install），
+  因此内置一个无依赖绘图后端：同一份矢量场景同时输出
+  * PDF（矢量线段 + PDF 标准字体 Helvetica 文本，可无损缩放，适合投稿）
+  * PNG（300 dpi 栅格化 + 内置 5x7 位图字体）
+  误差棒在有多 seed 时自动绘制。
 """
 
 from __future__ import annotations
@@ -50,7 +50,7 @@ from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Seque
 
 import numpy as np
 
-try:  # allow "python -m fedrevoke.run_experiments"
+try:  # 允许 "python -m fedrevoke.run_experiments"
     from . import config as C
 except ImportError:  # pragma: no cover
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -75,7 +75,7 @@ from .repair import AnchorRepair
 from .revoke import RevocationPipeline, assert_fingerprint_channel, verify_certificate
 from .shadow import ShadowDetector, fingerprint_text, load_signature_matrix, minhash_signature
 
-try:  # PyYAML is available in .venv; fall back to a minimal YAML-subset parser when missing
+try:  # PyYAML 在 .venv 中可用；缺失时用极简 YAML 子集解析器兜底
     import yaml  # type: ignore
 except Exception:  # pragma: no cover
     yaml = None
@@ -85,6 +85,10 @@ RESULTS_DIR = C.RESULTS
 FIGURES_DIR = C.FIGURES
 LOGS_DIR = C.LOGS
 CERT_DIR = C.ARTIFACTS / "certificates"
+
+# Tier B 的查询上限（唯一定义点）：生效值 = min(config.n_queries_eval, TIER_B_QUERY_CAP)。
+# 见 apply_tier_overrides 的 docstring；论文 §Metrics 与 §Implementation 必须与此一致。
+TIER_B_QUERY_CAP = 1000
 
 CSV_REQUIRED_COLUMNS = [
     "exp", "dataset", "silos", "revocation_ratio", "shadow_ratio", "method",
@@ -116,7 +120,7 @@ NAN = float("nan")
 
 
 # ======================================================================================
-# 0. Config loading
+# 0. 配置加载
 # ======================================================================================
 DEFAULT_CFG: Dict[str, Any] = {
     "exp": "e0_smoke",
@@ -151,7 +155,7 @@ DEFAULT_CFG: Dict[str, Any] = {
 
 
 def _parse_scalar(text: str) -> Any:
-    """Minimal YAML scalar parsing (fallback when PyYAML is missing)."""
+    """极简 YAML 标量解析（PyYAML 缺失时的兜底）。"""
     t = text.strip()
     if t in ("null", "~", ""):
         return None
@@ -180,7 +184,7 @@ def _parse_scalar(text: str) -> Any:
 
 
 def _mini_yaml(text: str) -> Dict[str, Any]:
-    """Support a minimal subset of this project configs/*.yaml (top-level keys + inline dict/list + comments)."""
+    """支持本项目 configs/*.yaml 的极小子集（顶层键 + 行内 dict/list + 注释）。"""
     cfg: Dict[str, Any] = {}
     for raw in text.splitlines():
         line = raw.split("#", 1)[0].rstrip()
@@ -194,7 +198,7 @@ def _mini_yaml(text: str) -> Dict[str, Any]:
 
 
 def load_config(path: Any) -> Dict[str, Any]:
-    """Read a YAML config and merge with defaults."""
+    """读取 YAML 配置并与默认值合并。"""
     p = Path(path)
     if not p.is_absolute():
         p = (C.ROOT / p) if (C.ROOT / p).exists() else p
@@ -202,7 +206,7 @@ def load_config(path: Any) -> Dict[str, Any]:
     data = yaml.safe_load(text) if yaml is not None else _mini_yaml(text)
     cfg = dict(DEFAULT_CFG)
     cfg.update({k: v for k, v in (data or {}).items() if v is not None or k in ("generator", "reranker")})
-    # multi-dataset configs must not inherit DEFAULT_CFG dataset=synthetic
+    # 多数据集配置不应继承 DEFAULT_CFG 的 dataset=synthetic
     if (data or {}).get("datasets") and not (data or {}).get("dataset"):
         cfg["dataset"] = str(list(data["datasets"])[0])
     cfg["_config_path"] = str(p)
@@ -210,10 +214,18 @@ def load_config(path: Any) -> Dict[str, Any]:
 
 
 def apply_tier_overrides(cfg: Mapping[str, Any], tier: str, model: str, smoke: bool = False) -> Dict[str, Any]:
-    """Two-tier evaluation: Tier A retrieval-only full grid; Tier B with generation, reduced grid.
+    """两档评测（父代理裁决）：Tier A 纯检索全网格；Tier B 含生成、缩减网格。
 
-    Tier A: do not call the generator (elicit/EM/F1 left empty and marked elicit_measured=False); the grid can run in full.
-    Tier B: call Qwen2.5-1.5B/7B-4bit; the grid is compressed to 1 revocation ratio x 3 shadow ratios x <=300 queries.
+    Tier A: 不调生成器（elicit/EM/F1 留空并标 elicit_measured=False），网格可全跑。
+    Tier B: 调 Qwen2.5-1.5B/7B-4bit；网格压缩为 1 个撤回比例 × 3 个影子比例，
+    查询上限取 min(config.n_queries_eval, TIER_B_QUERY_CAP)。
+
+    查询上限的唯一权威口径（论文 §Metrics/§Implementation 与此保持一致）：
+    生效值 = min(config 的 n_queries_eval, TIER_B_QUERY_CAP)。
+    e1_main*.yaml 给 500，e5_cross_dataset/e2/e3 给 300，未填时默认 TIER_B_QUERY_CAP。
+    上限取 1000 而非 300：DS2/nq 每查询约 1 条 gold，rev=5% 时命中被撤文档的查询数
+    ≈ n_q × 0.05，300 查询只给 ~15 条分母，低于评测协议要求的 ≥30；1000 查询给出 ~50 条，
+    生成成本仍可控（只对 gold 命中闭包的查询调用生成器）。
     """
     out = dict(cfg)
     out["tier"] = str(tier)
@@ -225,15 +237,13 @@ def apply_tier_overrides(cfg: Mapping[str, Any], tier: str, model: str, smoke: b
         rr = [float(x) for x in (out.get("revocation_ratios") or [0.05])]
         if not out.get("_rev_explicit"):
             out["revocation_ratios"] = [0.05 if 0.05 in rr else rr[0]]
-        # Tier B query cap: originally 300, but DS2/nq has only 1 gold per query; at rev=5%,
-        # queries hitting revoked documents ~ n_q x 0.05 -> 300 queries give only ~15 denominator items (evaluation protocol requires >=30),
-        # so it is relaxed to 1000 (full DS2 queries); generation cost stays manageable (~2x50 generations per cell).
-        out["n_queries_eval"] = int(min(int(out.get("n_queries_eval") or 1000), 1000))
+        out["n_queries_eval"] = int(min(int(out.get("n_queries_eval") or TIER_B_QUERY_CAP),
+                                        TIER_B_QUERY_CAP))
     return out
 
 
 def apply_smoke_overrides(cfg: Mapping[str, Any]) -> Dict[str, Any]:
-    """--smoke: MockGenerator + small synthetic scale, finishes within 60 seconds."""
+    """--smoke：MockGenerator + 合成小规模，保证 60 秒内跑完。"""
     out = dict(cfg)
     out["mode"] = "smoke"
     out["dataset"] = "synthetic"
@@ -244,7 +254,7 @@ def apply_smoke_overrides(cfg: Mapping[str, Any]) -> Dict[str, Any]:
 
 
 # ======================================================================================
-# 1. Synthetic data (generated on the fly; no network, no HF models loaded)
+# 1. 合成数据（现场生成，不联网、不加载 HF 模型）
 # ======================================================================================
 _TOPIC_WORDS = [
     "quarterly revenue guidance", "clinical trial enrollment", "wildfire containment",
@@ -269,18 +279,18 @@ def synthesize_dataset(
     forget_ratios: Sequence[float] = (0.01, 0.05, 0.20),
     n_qa: int = 5,
 ) -> Dict[str, Any]:
-    """Synthesize a cross-silo shadow-injection corpus on the fly (deterministic; for --smoke and unit tests).
+    """现场合成"跨孤岛影子注入"语料（确定性；供 --smoke 与单测使用）。
 
-    Structure:
-      * Each document = one unique fact (entity/attribute/value) + topic filler words
-      * Silos get topics via Dirichlet(alpha) skew, then mapped to clients
-      * A shadow_ratio fraction of documents get near-duplicate copies injected in a different silo (same fact, different fillers, noisy vectors)
-      * Queries fall into two classes: ordinary queries (gold = same-topic documents) and "revoked-knowledge queries" (gold = revoked documents)
+    结构：
+      * 每个文档 = 一个唯一事实（entity/attribute/value）+ 主题填充词
+      * 孤岛按 Dirichlet(alpha) 倾斜分配 topic，再映射到 client
+      * shadow_ratio 比例的文档在不同孤岛注入近重复副本（同事实、不同填充词、向量加噪）
+      * 查询分两类：普通查询（gold = 同主题文档）与"被撤知识查询"（gold = 被撤文档）
     """
     rng = np.random.default_rng(int(seed))
     n_topics = max(1, int(n_topics))
     topic_of_doc = rng.integers(0, n_topics, size=n_docs)
-    # Dirichlet skew: each silo preference over topics
+    # Dirichlet 倾斜：每个孤岛对主题的偏好
     client_topic_p = rng.dirichlet([max(1e-3, float(alpha))] * n_topics, size=max(1, int(n_clients)))
     topic_center = rng.normal(size=(n_topics, dim)).astype(np.float32)
 
@@ -298,7 +308,7 @@ def synthesize_dataset(
     def make_text(i: int) -> str:
         ent = entities[i % len(entities)]
         attr = attributes[(i // len(entities)) % len(attributes)]
-        val = 1000 + i  # unique fact value: avoids different documents sharing the same answer and distorting elicitation tests
+        val = 1000 + i  # 唯一事实值：避免不同文档共享同一答案导致诱导测试失真
         unit = units[(i // (len(entities) * len(attributes))) % len(units)]
         topic = _TOPIC_WORDS[int(topic_of_doc[i]) % len(_TOPIC_WORDS)]
         filler = " ".join(_FILLER[(i + j) % len(_FILLER)] for j in range(3))
@@ -313,7 +323,7 @@ def synthesize_dataset(
         text = make_text(i)
         pid = i
         corpus.append({
-            "pid": pid, "doc_id": "d%06d" % i, "client_id": "c0",  # client reassigned by skew later
+            "pid": pid, "doc_id": "d%06d" % i, "client_id": "c0",  # client 稍后按倾斜重排
             "topic": "t%d" % topic, "text": text, "n_tokens": len(text.split()),
             "fingerprint": fingerprint_text(text, num_perm, int(seed)),
         })
@@ -321,7 +331,7 @@ def synthesize_dataset(
         texts[pid] = text
         signatures.append(np.frombuffer(minhash_signature(text, num_perm, int(seed)), dtype="<u4"))
 
-    # ---- Silo assignment (Dirichlet skew) ----
+    # ---- 孤岛分配（Dirichlet 倾斜） ----
     client_of = np.zeros(n_docs, dtype=np.int64)
     for topic in range(n_topics):
         idx = np.flatnonzero(topic_of_doc == topic)
@@ -333,7 +343,7 @@ def synthesize_dataset(
     for i in range(n_docs):
         corpus[i]["client_id"] = "c%d" % int(client_of[i])
 
-    # ---- forget sets (doc level, nested r1 subset r5 subset r20; computed first so shadow injection covers them preferentially) ----
+    # ---- forget sets（doc 级，嵌套 r1 ⊂ r5 ⊂ r20；先算出来，让影子注入优先覆盖） ----
     forget_perm = rng.permutation(n_docs)
     forget: Dict[str, List[str]] = {}
     prev_ids: List[str] = []
@@ -343,8 +353,8 @@ def synthesize_dataset(
         ids = sorted("d%06d" % int(i) for i in forget_perm[:want].tolist())
         forget["r%d" % int(round(ratio * 100))] = ids
         prev_ids = ids
-    # ---- Cross-silo shadow injection (randomly over the whole corpus: for any 5% of the forget set, the
-    #      "fraction of shadowed documents" expectation equals shadow_ratio, consistent with the DS1 measured convention (183/609)) ----
+    # ---- 跨孤岛影子注入（在全体语料上随机注入：任取 5% 的 forget set 的
+    #      "含影子文档比例" 期望即等于 shadow_ratio，与 DS1 实测口径一致(183/609)） ----
     injected: List[Dict[str, Any]] = []
     shadow_map: Dict[str, List[str]] = {}
     shadow_docs: List[str] = []
@@ -359,12 +369,12 @@ def synthesize_dataset(
             shadow_client = int(choices[int(rng.integers(0, len(choices)))])
             pid = len(corpus)
             base = np.asarray(vectors[orig], dtype=np.float32)
-            # per-component noise: ||n||^2 = 1/cos^2 - 1, sigma = ||n||/sqrt(dim), so cos(vec, base) is about shadow_sim
+            # 逐分量噪声：||n||^2 = 1/cos^2 - 1，sigma = ||n||/sqrt(dim)，使 cos(vec, base) 约等于 shadow_sim
             nn = math.sqrt(max(1e-9, 1.0 / max(1e-6, float(shadow_sim)) ** 2 - 1.0))
             noise = rng.normal(scale=nn / math.sqrt(dim), size=dim).astype(np.float32)
             vec = base + noise
             vec = vec / max(1e-9, float(np.linalg.norm(vec)))
-            # shadow text: same fact, different fillers -> MinHash Jaccard ~0.8
+            # 影子文本：同事实、不同填充词 → MinHash Jaccard ~0.8
             text = make_text(orig).replace("according to", "per").replace("latest", "newly released")
             doc_id = "s%06d" % k
             corpus.append({
@@ -384,7 +394,7 @@ def synthesize_dataset(
     S = np.stack(signatures).astype(np.uint64)
     n_total = len(corpus)
 
-    # ---- Queries ----
+    # ---- 查询 ----
     queries: List[Dict[str, Any]] = []
     qa_items: List[Dict[str, Any]] = []
     for q in range(n_queries):
@@ -399,7 +409,7 @@ def synthesize_dataset(
             "answers": [corpus[anchor]["text"].split(" is ")[-1].split(" according")[0]],
             "gold_pids": gold, "qvec": qvec.astype(np.float32),
         })
-    # generation-side elicitation test items: targeting revoked knowledge (seeds determined later; generic items for now)
+    # 生成端诱导测试条目：针对被撤知识（seed 稍后确定，这里先给通用条目）
     for k in range(min(n_qa, n_shadow if n_shadow else n_qa)):
         anchor = int(injected[k]["orig"].lstrip("d")) if k < len(injected) else k % n_docs
         qa_items.append({
@@ -444,7 +454,7 @@ def synthesize_dataset(
 
 
 # ======================================================================================
-# 2. Real data loading (data/processed/<ds>/)
+# 2. 真实数据加载（data/processed/<ds>/）
 # ======================================================================================
 REQUIRED_FILES = ["corpus.jsonl", "queries.jsonl", "forget_sets.json", "shadow_pairs.json"]
 EMB_CANDIDATES = [C.EMB_FILENAME, "embeddings.npy"]
@@ -465,7 +475,7 @@ def _read_jsonl(path: Path) -> List[dict]:
 
 
 def data_status(ds_key: str) -> Dict[str, Any]:
-    """Check on-disk completeness of a dataset (for summary.json / reports)."""
+    """检查某数据集的落盘完备度（供 summary.json / 报告使用）。"""
     name = C.DATASETS.get(ds_key, ds_key)
     d = Path(C.PROCESSED) / name
     status: Dict[str, Any] = {"ds_key": ds_key, "name": name, "dir": str(d), "exists": d.exists(), "files": {}}
@@ -490,7 +500,7 @@ def data_status(ds_key: str) -> Dict[str, Any]:
     qemb = next((f for f in QRY_EMB_CANDIDATES if (d / f).exists()), None)
     qemb_path = str(d / qemb) if qemb else None
     if qemb is None:
-        # second choice: bge-small embeddings written to artifacts/query_embeddings/ (without modifying data/)
+        # 次选：SA5 用 bge-small 落盘到 artifacts/query_embeddings/（不改动 data/）
         qdir = Path(C.ARTIFACTS) / "query_embeddings"
         for f in QRY_EMB_CANDIDATES:
             cand = qdir / ("%s_%s" % (name, f))
@@ -502,13 +512,13 @@ def data_status(ds_key: str) -> Dict[str, Any]:
     status["query_embeddings_file"] = qemb
     status["query_embeddings_path"] = qemb_path
     if not qemb:
-        missing.append(QRY_EMB_CANDIDATES[0] + "（queries query vectors; absent from both data/processed and artifacts/query_embeddings）")
+        missing.append(QRY_EMB_CANDIDATES[0] + "（queries 查询向量；data/processed 与 artifacts/query_embeddings 均无）")
     status["missing"] = missing
     return status
 
 
 def load_real_dataset(ds_key: str, limit_queries: Optional[int] = None) -> Tuple[Optional[Dict[str, Any]], Dict[str, Any]]:
-    """Read a real dataset; return (None, status) when minimum requirements are not met."""
+    """读取真实数据集；不满足最低要求时返回 (None, status)。"""
     status = data_status(ds_key)
     name = status["name"]
     d = Path(status["dir"])
@@ -549,7 +559,7 @@ def load_real_dataset(ds_key: str, limit_queries: Optional[int] = None) -> Tuple
         if qvecs is not None:
             qvecs = qvecs[: int(limit_queries)]
 
-    # --- query source families + official strict gold (DS3: 50 official vs 450 synthetic must be reported separately) ---
+    # --- 查询来源族 + 官方 strict gold（DS3：50 条官方 vs 450 条合成必须分开报） ---
     families: List[str] = []
     gold_effective: List[List[int]] = []
     gold_pooled: List[List[int]] = []
@@ -589,7 +599,7 @@ def load_real_dataset(ds_key: str, limit_queries: Optional[int] = None) -> Tuple
     doc_pids: Dict[str, List[int]] = {}
     for i, r in enumerate(corpus):
         doc_pids.setdefault(str(r.get("doc_id")), []).append(int(r.get("pid", i)))
-    # shadow-original chunk pairing (self-query probe convention): shadow_pairs provides orig_pid/shadow_pid
+    # 影子-原件 chunk 配对（父代理的 self-query 探针口径）：shadow_pairs 提供 orig_pid/shadow_pid
     chunk_pairs: Dict[str, tuple] = {}
     _sp = shadow_pairs or {}
     _op, _shp = (_sp.get("orig_pid") or {}), (_sp.get("shadow_pid") or {})
@@ -599,7 +609,7 @@ def load_real_dataset(ds_key: str, limit_queries: Optional[int] = None) -> Tuple
                 chunk_pairs[str(k)] = (int(v), int(_shp[k]))
             except Exception:
                 continue
-    # --- shadow mapping: prefer pid_meta.json (is_shadow/orig_doc_id), fall back to shadow_pairs.injected ---
+    # --- 影子映射：优先 pid_meta.json（is_shadow/orig_doc_id），退回 shadow_pairs.injected ---
     shadow_map: Dict[str, List[str]] = {}
     pid_meta_path = d / "pid_meta.json"
     if pid_meta_path.exists():
@@ -621,7 +631,7 @@ def load_real_dataset(ds_key: str, limit_queries: Optional[int] = None) -> Tuple
         status["shadow_map_source"] = "shadow_pairs.json"
     status["n_shadowed_docs"] = len(shadow_map)
 
-    # --- query vectors: prefer on-disk files; otherwise use a gold-evidence centroid proxy (must be noted in the report) ---
+    # --- 查询向量：优先落盘文件；否则用 gold 证据质心代理（须在报告中标注） ---
     if qvecs is None:
         pid_to_row = {}
         if pid_order is not None and len(pid_order) == len(corpus):
@@ -640,11 +650,11 @@ def load_real_dataset(ds_key: str, limit_queries: Optional[int] = None) -> Tuple
             built[i] = (v / n) if n > 1e-9 else v
             keep.append(i)
         if not keep:
-            status["missing"] = list(status.get("missing", [])) + ["query vectors (and gold_pids empty, centroid proxy unavailable)"]
+            status["missing"] = list(status.get("missing", [])) + ["查询向量（且 gold_pids 为空，无法用质心代理）"]
             return None, status
         queries = [queries[i] for i in keep]
         qvecs = built[keep]
-        status["query_vector_source"] = "gold_centroid_proxy (proxy when no query encoder is available; absolute recall is not directly comparable to the paper convention)"
+        status["query_vector_source"] = "gold_centroid_proxy（无查询编码器时的代理；绝对 recall 不可与论文口径直接比较）"
     return {
         "name": name,
         "corpus": corpus,
@@ -676,10 +686,10 @@ def load_real_dataset(ds_key: str, limit_queries: Optional[int] = None) -> Tuple
 
 
 # ======================================================================================
-# 3. Index construction and single-method evaluation
+# 3. 索引构建与单次方法评测
 # ======================================================================================
 def build_index(dataset: Mapping[str, Any], backend: str = "faiss_ivf") -> ProvenanceIndex:
-    """Build a ProvenanceIndex from the dataset and attach text hooks so verify/elicitation can fetch source text."""
+    """由数据集构造 ProvenanceIndex，并挂上文本钩子供 verify/elicitation 取原文。"""
     corpus = list(dataset["corpus"])
     V = np.asarray(dataset["vectors"], dtype=np.float32)
     metas = [
@@ -702,10 +712,10 @@ def build_index(dataset: Mapping[str, Any], backend: str = "faiss_ivf") -> Prove
 
 def build_oracle_index(dataset: Mapping[str, Any], doc_ids: Sequence[str],
                        backend: str = "faiss_ivf") -> ProvenanceIndex:
-    """I_empty (Eq. 7): fully rebuild after removing revoked documents and their injected shadows.
+    """I∅（式 7）：删去被撤文档及其注入影子后全量重建。
 
-    This is a measurement apparatus (the oracle side of Eq. 18) and is not counted on any method cost axis.
-    Shadows are the injected copies of revoked documents in shadow_map, i.e. a ground-truth instance of Definition 2 under the injection protocol.
+    这是测量装置（式 18 的 oracle 侧），不计入任何方法的代价轴。
+    影子取 shadow_map 中被撤文档的注入副本，即 Definition 2 在注入协议下的真值实例。
     """
     corpus = list(dataset["corpus"])
     V = np.asarray(dataset["vectors"], dtype=np.float32)
@@ -734,7 +744,7 @@ def build_oracle_index(dataset: Mapping[str, Any], doc_ids: Sequence[str],
 
 
 def forgot_doc_ids(dataset: Mapping[str, Any], ratio_key: str, ratio: float) -> List[str]:
-    """Take the forget set at the configured ratio (real data uses the r1/r5/r20 keys of forget_sets.json)."""
+    """按配置比例取 forget set（真实数据用 forget_sets.json 的 r1/r5/r20 键）。"""
     fs = dataset.get("forget_sets") or {}
     key = ratio_key if ratio_key in fs else None
     if key is None:
@@ -750,13 +760,13 @@ def forgot_doc_ids(dataset: Mapping[str, Any], ratio_key: str, ratio: float) -> 
 
 def query_residual_stats(index: Any, dataset: Mapping[str, Any], doc_ids: Sequence[str],
                          k: int = 10, max_probes: int = 64, seed: int = int(C.SEED)) -> Dict[str, Any]:
-    """E6 three curves (fixed denominator, comparable across methods):
+    """E6 三条曲线（父代理口径，分母固定、方法间可比）：
 
-    * self_probe_residual  : mechanism upper bound -- use the embedding of the original chunk most similar to the shadow as the query,
-                             and count the fraction of shadowed revoked documents hit by their self-probe (requires surviving shadows).
-    * real_query_residual  : headline metric -- among MultiHop-RAG gold-evidence queries,
-                             the fraction of queries whose top-k hits any surviving shadow surrogate.
-    * unrel_query_residual : control -- the same reading on unrelated queries whose gold is disjoint from revoked documents (should be ~0).
+    * self_probe_residual  : 机制上界 —— 以"影子最相似的原始 chunk"嵌入作查询，
+                             统计**含影子的被撤文档**中被其 self-probe 命中的比例（需仍有存活影子）。
+    * real_query_residual  : 头条指标 —— MultiHop-RAG gold-evidence 查询里，
+                             top-k 命中任一存活影子代理的查询比例。
+    * unrel_query_residual : 对照 —— gold 与被撤文档无交集的无关查询的同一读数（应 ≈ 0）。
     """
     out: Dict[str, Any] = {
         "n_shadowed_revoked": 0, "n_surviving_surrogate_docs": 0, "n_surviving_surrogates": 0,
@@ -806,7 +816,7 @@ def query_residual_stats(index: Any, dataset: Mapping[str, Any], doc_ids: Sequen
         got = np.asarray(got)
         return {int(v) for row in got.tolist() for v in row if int(v) >= 0}
 
-    # ---- (1) self-probe: one probe per shadowed revoked document (the original chunk most similar to the shadow) ----
+    # ---- (1) self-probe：每个含影子的被撤文档取一个探针（影子最相似的原始 chunk） ----
     probes: List[np.ndarray] = []
     probe_docs: List[str] = []
     sel = shadowed if len(shadowed) <= max_probes else [shadowed[int(i)] for i in
@@ -837,7 +847,7 @@ def query_residual_stats(index: Any, dataset: Mapping[str, Any], doc_ids: Sequen
         if all_sur:
             out["retrieved_surrogate_fraction"] = float(len(set(all_sur) & hit_ids) / len(all_sur))
 
-    # ---- (2)(3) real queries: gold hits revoked documents vs unrelated queries ----
+    # ---- (2)(3) 真实查询：gold 命中被撤文档 vs 无关查询 ----
     if qvecs is not None and queries:
         Q = np.asarray(qvecs)
         real_idx, unrel_idx = [], []
@@ -875,7 +885,7 @@ def query_residual_stats(index: Any, dataset: Mapping[str, Any], doc_ids: Sequen
                 out["real_query_residual"] = 0.0
                 out["real_query_residual_k50"] = 0.0
                 out["retrieved_surrogate_fraction_realq"] = 0.0
-        # (2b) restricted real-query version: query vectors use only the centroid of the gold chunk of revoked documents (usable proxy when no query encoder)
+        # (2b) 真实查询受限版：查询向量只用"被撤文档的 gold chunk"质心（无查询编码器时的可用代理）
         restr_vecs, restr_idx = [], []
         if V is not None:
             for i in real_idx:
@@ -917,19 +927,19 @@ def query_residual_stats(index: Any, dataset: Mapping[str, Any], doc_ids: Sequen
 
 def build_qa_items(dataset: Mapping[str, Any], doc_ids: Sequence[str], max_items: int = 64,
                    seed: int = int(C.SEED)) -> List[Dict[str, Any]]:
-    """Build generation-side elicitation items targeting revoked knowledge (guarantees the elicit_rate / EM / F1 / faithfulness conventions).
+    """构造"针对被撤知识"的生成端诱导条目（elicit_rate / EM / F1 / faithfulness 的口径保证）。
 
-    Each item carries: query / answers / qvec / gold_pids (so probes can filter precisely by gold intersect closure) /
-    row (the index of this query in query_sample, so the evaluation side takes the correct retrieval results and avoids misaligned pairing).
+    每个条目携带：query / answers / qvec / **gold_pids**（供探针按 gold ∩ 闭包精确筛选）/
+    **row**（该查询在 query_sample 中的下标，供评测端取到*正确*的检索结果，避免错位配对）。
 
-    Rules: only use queries whose gold hits revoked documents (prefer shadowed ones); when synthetic data has no hits,
-    use the chunk centroid of the revoked document itself as the proxy query vector (answers take the fact value from that document text).
+    规则：只用 gold 命中被撤文档（优先含影子的）的查询；合成数据无命中时，
+    用被撤文档自身的 chunk 质心作为代理查询向量（答案取该文档文本中的事实值）。
     """
     smap = dataset.get("shadow_map") or {}
     corpus = dataset.get("corpus") or []
     docset = {str(d) for d in doc_ids}
-    # Q_R = queries whose gold intersects the closure (seed union shadow); must not take only shadow documents,
-    # otherwise queries hitting only seeds are missed when shadows exist (under single-silo requests the denominator collapses to single digits).
+    # Q_R = gold 与闭包（种子 ∪ 影子）相交的查询；不能只取影子文档，
+    # 否则有影子时会漏掉仅命中种子的查询（单孤岛请求下分母会塌到个位数）。
     shadow_docs = {str(s) for d in docset for s in (smap.get(d) or [])}
     prefer = docset | shadow_docs
     pids_by_doc: Dict[str, List[int]] = {}
@@ -952,8 +962,8 @@ def build_qa_items(dataset: Mapping[str, Any], doc_ids: Sequence[str], max_items
             "query": q.get("query", ""),
             "answers": list(q.get("answers") or []),
             "qvec": qv,
-            "gold_pids": sorted(golds),          # evaluation protocol: lets probes filter by gold intersect closure
-            "row": int(i),                        # critical: correct alignment index into query_sample
+            "gold_pids": sorted(golds),          # 父代理/SA9 要求：供探针按 gold ∩ 闭包筛选
+            "row": int(i),                        # 关键：与 query_sample 的正确对齐下标
             "query_source": (dataset.get("query_families") or [None] * (i + 1))[i]
                              if dataset.get("query_families") else None,
         })
@@ -962,7 +972,7 @@ def build_qa_items(dataset: Mapping[str, Any], doc_ids: Sequence[str], max_items
     if items:
         return items
 
-    # --- fallback: use the revoked document chunk centroid as the proxy query (only for synthetic / no-query-hit cases) ---
+    # --- 兜底：以被撤文档的 chunk 质心作为代理查询（仅合成/无查询命中时使用） ---
     V = dataset.get("vectors")
     texts = dataset.get("texts") or {}
     rng = np.random.default_rng(int(seed))
@@ -988,7 +998,7 @@ def build_qa_items(dataset: Mapping[str, Any], doc_ids: Sequence[str], max_items
 
 
 def requester_client_of(dataset: Mapping[str, Any]) -> str:
-    """A2: requester silo = the silo with the most documents (consistent with data_prep / resample_forget_sets)."""
+    """A2：请求者孤岛 = 文档数最多的孤岛（与 data_prep / resample_forget_sets 一致）。"""
     counts: Dict[str, int] = {}
     for r in (dataset.get("corpus") or []):
         did = str(r.get("doc_id", ""))
@@ -1003,13 +1013,13 @@ def requester_client_of(dataset: Mapping[str, Any]) -> str:
 
 def controlled_forget_set(dataset: Mapping[str, Any], ratio: float, coverage: Optional[float],
                           seed: int, ratio_key: str) -> Tuple[List[str], Dict[str, Any]]:
-    """Build a forget set with shadowed-document fraction = coverage (E6-specific; unified real/synthetic convention).
+    """构造"含影子文档比例 = coverage"的 forget set（E6 专用；真实/合成统一口径）。
 
-    In real data shadow copies are injected at a fixed set (DS1: 183/609 docs have shadows), so E6 independent variable should be
-    the fraction of revoked documents that carry shadows, not the corpus-wide shadow ratio. When coverage is None, fall back to
-    the natural split of forget_sets.json (used by the main experiment).
+    真实数据里影子副本是固定注入的（DS1: 183/609 篇有影子），因此 E6 的自变量应当是
+    **被撤文档中带影子的比例**，而不是语料整体的影子比例。coverage 为 None 时退回
+    forget_sets.json 的自然切分（主实验用）。
 
-    A2: the candidate pool contains only the requester silo own documents, D_R subset D_{c_R}.
+    A2：候选池只含请求者孤岛自己的文档，D_R ⊆ D_{c_R}。
     """
     smap = dataset.get("shadow_map") or {}
     shadow_docs = {str(x) for x in (dataset.get("shadow_docs") or [])}
@@ -1020,8 +1030,8 @@ def controlled_forget_set(dataset: Mapping[str, Any], ratio: float, coverage: Op
         if str(r.get("doc_id", "")).startswith("d")
     }
     all_docs = sorted({str(r.get("doc_id")) for r in (dataset.get("corpus") or [])})
-    # shadow copies themselves are not original knowledge and must not be revoked documents (same for real/synthetic);
-    # and only the requester silo documents are allowed (A2).
+    # 影子副本本身不是"原始知识"，不得作为被撤文档（真实/合成都一样）；
+    # 且只允许请求者孤岛的文档（A2）。
     pool = [d for d in all_docs if d not in shadow_docs and doc_client.get(d, "c0") == requester]
     if coverage is None or not smap:
         ids = forgot_doc_ids(dataset, ratio_key, ratio)
@@ -1031,7 +1041,7 @@ def controlled_forget_set(dataset: Mapping[str, Any], ratio: float, coverage: Op
     shadowed = [d for d in pool if smap.get(d)]
     plain = [d for d in pool if not smap.get(d)]
     n_corpus = len({str(r.get("doc_id")) for r in (dataset.get("corpus") or [])}) - len(shadow_docs)
-    # ratios are defined at corpus level (consistent with the paper tables), but sampled only from the requester silo pool (A2).
+    # 比例按语料级定义（与论文表口径一致），但只从请求者孤岛池中抽样（A2）。
     k = max(3, int(round(float(ratio) * max(n_corpus, len(pool)))))
     k = min(k, len(pool))
     rng = np.random.default_rng(int(seed))
@@ -1053,7 +1063,7 @@ def controlled_forget_set(dataset: Mapping[str, Any], ratio: float, coverage: Op
 
 
 def subset_dataset(dataset: Mapping[str, Any], n_docs: int, seed: int) -> Dict[str, Any]:
-    """Trim the dataset to a corpus size (for the E4 cost sweep); keep pids consecutively renumbered."""
+    """按 corpus 规模裁剪数据集（用于 E4 代价扫描）；保持 pid 连续重编号。"""
     n = min(int(n_docs), len(dataset["corpus"]))
     if n >= len(dataset["corpus"]):
         return dict(dataset)
@@ -1094,7 +1104,7 @@ def subset_dataset(dataset: Mapping[str, Any], n_docs: int, seed: int) -> Dict[s
                   and len(dataset["qvecs"]) >= (max(keep_idx) + 1 if keep_idx else 0) else dataset.get("qvecs")),
         "gold_pids": gold,
         "qa_items": [q for q in (dataset.get("qa_items") or []) if True][: len(queries)],
-        # the forget set must be rebuilt over doc_ids that still exist after trimming, otherwise the cost sweep degenerates to no revocation
+        # forget set 必须按"裁剪后仍存在的 doc_id"重建，否则代价扫描会退化为"无撤回"
         "forget_sets": {
             str(k): ([str(d) for d in (v or []) if str(d) in {str(r.get("doc_id")) for r in corpus}]
                      if isinstance(v, (list, tuple)) else v)
@@ -1112,7 +1122,7 @@ def subset_dataset(dataset: Mapping[str, Any], n_docs: int, seed: int) -> Dict[s
 
 @dataclass
 class RunPoint:
-    """One experiment configuration point (grid cell)."""
+    """一个实验配置点（实验格）。"""
 
     exp: str
     dataset: str
@@ -1145,7 +1155,7 @@ def build_detector(
     sim_threshold: Optional[float] = None,
     vector_channel: bool = True,
 ) -> ShadowDetector:
-    """Build a ShadowDetector: whenever the shadow closure is enabled, inject the signature matrix (INTERFACES Section 11 items 2/3)."""
+    """构造 ShadowDetector：凡启用影子闭包都把签名矩阵注入（INTERFACES §11 第 2/3 条）。"""
     scfg = dict(cfg.get("shadow") or {})
     return ShadowDetector(
         sim_threshold=float(sim_threshold if sim_threshold is not None else scfg.get("sim_threshold", 0.92)),
@@ -1159,18 +1169,18 @@ def build_detector(
 
 
 def build_repair(cfg: Mapping[str, Any], *, enabled: bool = True, recalibrate: Optional[bool] = None) -> Any:
-    """Build an AnchorRepair.
+    """构造 AnchorRepair。
 
-    n_anchors priority: CLI/_n_anchors override > config > repair module default.
-    Note (measured): n_anchors=512 pushes anchor copies into the top-10 and drops after_recall to 0.896,
-    while the module new default 64 matches it; therefore when the config still has the legacy 512 and is not explicitly overridden, fall back to the module default.
+    n_anchors 优先级：CLI/_n_anchors 覆盖 > 配置 > repair 模块默认值。
+    注意（SA7/父代理实测）：n_anchors=512 会把 anchor 副本塞进 top-10、after_recall 掉到 0.896，
+    而模块新默认 64 与之持平；因此当配置仍是遗留的 512 且未显式覆盖时，退回模块默认。
     """
     if not enabled:
         return None
     rcfg = dict(cfg.get("repair") or {})
     n_anchors = cfg.get("_n_anchors", rcfg.get("n_anchors"))
     if n_anchors is not None and int(n_anchors) == 512 and "_n_anchors" not in cfg:
-        n_anchors = None  # legacy config 512 -> use the module default (changed to 64)
+        n_anchors = None  # 遗留配置 512 → 用模块默认（SA7 已把默认改为 64）
     kwargs = {}
     if n_anchors is not None:
         kwargs["n_anchors"] = int(n_anchors)
@@ -1183,7 +1193,7 @@ def build_repair(cfg: Mapping[str, Any], *, enabled: bool = True, recalibrate: O
 
 
 def build_generator_for(cfg: Mapping[str, Any], smoke: bool) -> Any:
-    """Build a generator from config; use MockGenerator under smoke or when HF dependencies are not installed."""
+    """按配置构造生成器；smoke 或未安装 HF 依赖时使用 MockGenerator。"""
     spec = cfg.get("generator")
     if spec == "none":
         return None
@@ -1193,7 +1203,7 @@ def build_generator_for(cfg: Mapping[str, Any], smoke: bool) -> Any:
         return build_generator("hf", model_id=str(spec), load_in_4bit=bool(cfg.get("generator_4bit", True)),
                                device="cuda", max_batch=2, strict=False)
     except Exception as exc:
-        warnings.warn("generator construction failed, falling back to MockGenerator：%s: %s" % (type(exc).__name__, exc))
+        warnings.warn("生成器构造失败，回退 MockGenerator：%s: %s" % (type(exc).__name__, exc))
         return MockGenerator("MOCK")
 
 
@@ -1211,7 +1221,7 @@ def evaluate_method(
     notes: str = "",
     index_before: Any = None,
 ) -> Dict[str, Any]:
-    """Run one method (fedrevoke or a baseline) and return a uniformly structured result dict."""
+    """跑一个方法（fedrevoke 或基线）并返回统一结构的结果 dict。"""
     scfg = dict(cfg.get("shadow") or {})
     kw = dict(
         query_sample=dataset.get("qvecs"),
@@ -1225,7 +1235,7 @@ def evaluate_method(
         text_store=text_store,
         max_new_tokens=48,
         elicit_k=int(cfg.get("k", 10)),
-        # information fairness + query-family conventions
+        # 信息公平性 + 查询族口径（父代理裁决 C/F）
         signatures=dataset.get("signatures"),
         sim_threshold=float(point.sim_threshold if point.sim_threshold is not None else scfg.get("sim_threshold", 0.92)),
         lsh_threshold=float(scfg.get("lsh_threshold", 0.80)),
@@ -1260,7 +1270,7 @@ def evaluate_method(
         try:
             res = pipe.revoke(doc_ids, dataset.get("qvecs"))
         except RuntimeError as exc:
-            # Section 11 fail-fast: fingerprint degradation fails directly in full mode (no silent results)
+            # §11 fail-fast：full 模式下指纹退化直接失败（不静默出结果）
             raise
         ctx = build_eval_context(index, doc_ids, **kw)
         forget = res.report.as_dict()
@@ -1268,7 +1278,7 @@ def evaluate_method(
         forget["n_surrogates"] = len(_surrogate_ids(index, dataset, doc_ids))
         _vmeta = res.certificate.get("verification_meta", {}) or {}
         forget["elicit_measured"] = bool(_vmeta.get("elicit_measured", False))
-        # per-item hit flags are passed through from the certificate verification_meta into the row (for paired McNemar)
+        # 逐条命中标记从凭证的 verification_meta 透传到行（配对 McNemar 用）
         forget["elicit_flags"] = list(_vmeta.get("elicit_flags") or [])
         forget["elicit_rate_closed_book"] = _vmeta.get("elicit_rate_closed_book", NAN)
         forget["elicit_flags_closed_book"] = list(_vmeta.get("elicit_flags_closed_book") or [])
@@ -1279,11 +1289,11 @@ def evaluate_method(
         utility = evaluate_utility(ctx, index, generator=generator)
         deleted_by_run = sorted(set(int(i) for i in index.deleted_ids()))
         utility.update(evaluate_delta_utility(index_before, index, ctx, deleted_by_run, generator=generator))
-        # Eq.(18): the oracle side is I_empty rebuilt after removing seeds union injected shadows (measurement apparatus, not charged)
+        # 式(18)：oracle 侧是"删去种子∪注入影子后重建"的 I∅（测量装置，不计费）
         index_oracle = kw.get("index_oracle") or build_oracle_index(dataset, doc_ids)
         utility["rho_hat_tv"] = rho_hat_tv(index_oracle, index, ctx)
         utility["n_deleted_by_run"] = len(deleted_by_run)
-        # unified convention: rho_hat = max(rho_hat_ret, elicit); conservative bound = max(hit, elicit)
+        # 统一口径：rho_hat = max(rho_hat_ret, elicit)；保守上界 = max(hit, elicit)
         _er = float(forget.get("elicit_rate", 0.0) or 0.0)
         _hr = float(forget.get("hit_rate", 0.0) or 0.0)
         _rret = float(utility.get("rho_hat_tv", NAN) or NAN)
@@ -1301,7 +1311,7 @@ def evaluate_method(
             "n_replica_control": int(res.repair_stats.get("n_anchor_replicas", 0) or 0),
             "n_vectors_delta": int(res.certificate.get("index_stats_after", {}).get("n_vectors", 0)
                                    - res.certificate.get("index_stats_before", {}).get("n_vectors", 0)),
-            # M2/M3 time share (measure at DS2 scale whether closure/erasure becomes the new bottleneck)
+            # M2/M3 耗时占比（父代理要求：在 DS2 规模上量出闭包/擦除是否成为新瓶颈）
             "m2_closure_s": float(res.cost.get("stage_seconds", {}).get("M2_closure", 0.0)),
             "m3_erase_s": float(res.cost.get("stage_seconds", {}).get("M3_erase", 0.0)),
             "m4_repair_s": float(res.cost.get("stage_seconds", {}).get("M4_repair", 0.0)),
@@ -1368,7 +1378,7 @@ def _surrogate_hit_rate(index: ProvenanceIndex, dataset: Mapping[str, Any], doc_
 
 
 # ======================================================================================
-# 4. Dependency-free plotting backend (PDF vector + PNG 300dpi; no matplotlib locally and pip install forbidden)
+# 4. 无依赖绘图后端（PDF 矢量 + PNG 300dpi；本机无 matplotlib 且禁止 pip install）
 # ======================================================================================
 _FONT_5X7: Dict[str, List[str]] = {
     "0": [".###.", "#...#", "#..##", "#.#.#", "##..#", "#...#", ".###."],
@@ -1427,7 +1437,7 @@ _FONT_5X7: Dict[str, List[str]] = {
 
 
 class Canvas:
-    """Minimal vector/raster canvas: coordinate unit is device pixels (top-left origin, y downward)."""
+    """极简矢量/栅格画布：坐标单位为设备像素（左上原点，y 向下）。"""
 
     def __init__(self, width_px: int, height_px: int, dpi: int = 300) -> None:
         self.w = int(width_px)
@@ -1435,7 +1445,7 @@ class Canvas:
         self.dpi = int(dpi)
         self.ops: List[Tuple] = []
 
-    # ---- primitives ------------------------------------------------------------- #
+    # ---- 图元 ------------------------------------------------------------- #
     def line(self, x0, y0, x1, y1, width=1.0, color=(0, 0, 0)) -> None:
         self.ops.append(("line", (float(x0), float(y0), float(x1), float(y1)), float(width), tuple(color)))
 
@@ -1468,8 +1478,8 @@ class Canvas:
         mask = (xs - cx) ** 2 + (ys - cy) ** 2 <= r * r
         img[y0 : y1 + 1, x0 : x1 + 1][mask] = np.asarray(color, dtype=np.uint8)
 
-    # bitmap-font aspect-ratio correction: a 5x7 font glyph is about 0.85x the font height wide, wider than Helvetica (~0.5),
-    # so the effective font size is scaled by _GLYPH_K when rasterizing, to keep long labels from overflowing the canvas horizontally.
+    # 位图字体宽高比修正：5x7 字体的字宽约为字号高的 0.85 倍，比 Helvetica(约 0.5) 宽，
+    # 因此栅格化时按 _GLYPH_K 缩小有效字号，避免长标签横向溢出画布。
     _GLYPH_K = 0.62
 
     def _text_scale(self, size_pt: float) -> int:
@@ -1590,7 +1600,7 @@ class Canvas:
                 theta = math.radians(rot)
                 ct, st = math.cos(theta), math.sin(theta)
                 px, py = X(x), Y(y)
-                # baseline offset (along the text direction) + growing upward at -90 degrees => screen y up, PDF y also up, use Tm directly
+                # 基线偏移（沿文本方向）+ -90 度时向上生长 => 屏幕 y 向上，PDF y 也向上，直接用 Tm
                 ox = px + shift * ct
                 oy = py - shift * st * (-1.0)
                 out.append("BT /F1 %.2f Tf %.3f %.3f %.3f rg %.4f %.4f %.4f %.4f %.4f %.4f Tm (%s) Tj ET"
@@ -1628,7 +1638,7 @@ class Canvas:
 
 
 def write_png(path: Any, rgb: np.ndarray) -> str:
-    """Minimal PNG encoder (8-bit RGB, no third-party dependencies, deterministic output)."""
+    """最小 PNG 编码器（8 位 RGB，无第三方依赖，确定性输出）。"""
     rgb = np.ascontiguousarray(rgb.astype(np.uint8))
     h, w, _ = rgb.shape
     raw = bytearray()
@@ -1648,14 +1658,14 @@ def write_png(path: Any, rgb: np.ndarray) -> str:
     return str(p)
 
 
-# ---- chart drawing -----------------------------------------------------------------------
+# ---- 图表绘制 -----------------------------------------------------------------------
 _PALETTE = [
     (0, 90, 170), (200, 60, 40), (20, 140, 90), (140, 90, 170), (210, 140, 20), (80, 80, 80),
 ]
 
 
 def _fit_size(cv: "Canvas", s: str, max_px: float, size_pt: float, min_pt: float = 4.0) -> float:
-    """Auto-shrink font size so text width stays within the given pixel width (keeps titles/axis labels from being clipped)."""
+    """自动缩字号，保证文本宽度不超过给定像素宽（避免标题/轴标签被裁掉）。"""
     size = float(size_pt)
     while size > min_pt and cv._text_len(s, size) > max_px:
         size -= 0.5
@@ -1722,7 +1732,7 @@ def _plot_xy_mpl(
     figsize: Tuple[float, float] = (6.0, 3.8),
     dpi: int = 300,
 ) -> Dict[str, str]:
-    """matplotlib version (the local .venv has matplotlib 3.11) -- preferred for the paper: vector PDF + 300 dpi PNG."""
+    """matplotlib 版本（本机 .venv 已装 matplotlib 3.11）——论文首选，矢量 PDF + 300 dpi PNG。"""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -1771,18 +1781,18 @@ def plot_xy(
     figsize: Tuple[float, float] = (6.0, 3.8),
     dpi: int = 300,
 ) -> Dict[str, str]:
-    """Draw a multi-series line/scatter chart (with error bars), outputting both PDF and PNG.
+    """画多序列折线/散点图（带误差棒），同时输出 PDF 与 PNG。
 
-    Prefer matplotlib (vector PDF + 300 dpi PNG); any exception falls back to the built-in dependency-free backend (PDF vector + PNG bitmap font),
-    so charts can still be produced on an interpreter without matplotlib.
+    优先 matplotlib（矢量 PDF + 300 dpi PNG）；任何异常都回退到内置无依赖后端（PDF 矢量 + PNG 位图字体），
+    因此即使换到没有 matplotlib 的解释器也能出图。
 
-    series elements:{"label","x","y","yerr"(optional),"xerr"(optional),"color"(optional),"marker"(optional)}
+    series 元素：{"label","x","y","yerr"(可选),"xerr"(可选),"color"(可选),"marker"(可选)}
     """
     try:
         return _plot_xy_mpl(series, path_pdf, path_png, title=title, xlabel=xlabel, ylabel=ylabel,
                             log_x=log_x, figsize=figsize, dpi=dpi)
-    except Exception as exc:  # pragma: no cover - depends on environment
-        print("    [plot] matplotlib unavailable（%s: %s）, falling back to the built-in plotting backend" % (type(exc).__name__, exc))
+    except Exception as exc:  # pragma: no cover - 取决于环境
+        print("    [plot] matplotlib 不可用（%s: %s），回退内置绘图后端" % (type(exc).__name__, exc))
     return _plot_xy_canvas(series, path_pdf, path_png, title=title, xlabel=xlabel, ylabel=ylabel,
                            log_x=log_x, figsize=figsize, dpi=dpi)
 
@@ -1799,13 +1809,13 @@ def _plot_xy_canvas(
     figsize: Tuple[float, float] = (6.0, 3.8),
     dpi: int = 300,
 ) -> Dict[str, str]:
-    """Built-in dependency-free plotting backend (fallback when matplotlib is missing; PDF is vector, PNG is 300 dpi bitmap font)."""
+    """内置无依赖绘图后端（无 matplotlib 时的兜底；PDF 为矢量、PNG 为 300 dpi 位图字体）。"""
     W = int(round(figsize[0] * dpi))
     H = int(round(figsize[1] * dpi))
     cv = Canvas(W, H, dpi)
     m_left, m_right, m_top, m_bottom = 0.17 * W, 0.03 * W, 0.12 * H, 0.19 * H
     px0, px1 = m_left, W - m_right
-    py0, py1 = H - m_bottom, m_top  # plot-area top/bottom (pixels, y downward)
+    py0, py1 = H - m_bottom, m_top  # 绘图区上下（像素，y 向下）
 
     def tx(v):
         if log_x:
@@ -1835,7 +1845,7 @@ def _plot_xy_canvas(
     def ty_map(v):
         return py0 + (float(v) - ty.lo) / max(1e-12, ty.hi - ty.lo) * (py1 - py0)
 
-    # background and grid
+    # 背景与网格
     cv.rect(px0, py1, px1 - px0, py0 - py1, fill=None, stroke=(120, 120, 120), width=1.2)
     xticks = _log_ticks(tx.lo, tx.hi) if log_x else _nice_ticks(tx.lo, tx.hi, 5)
     yticks = _nice_ticks(ty.lo, ty.hi, 5)
@@ -1851,7 +1861,7 @@ def _plot_xy_canvas(
         x = tx(t) if not log_x else tx(t)
         cv.line(x, py0, x, py1, 0.6, (235, 235, 235))
         cv.text(x, py0 + 14, _fmt_tick(t), 8.0, (40, 40, 40), "center")
-    # axis labels (auto-shrink font + rotate y-axis label 90 degrees)
+    # 轴标签（自动缩字号 + y 轴标签旋转 90 度）
     x_size = _fit_size(cv, xlabel, px1 - px0, 9.0)
     cv.text((px0 + px1) / 2.0, H - 24, xlabel, x_size, (20, 20, 20), "center")
     y_size = _fit_size(cv, ylabel, py0 - py1, 9.0)
@@ -1859,7 +1869,7 @@ def _plot_xy_canvas(
     if title:
         cv.text((px0 + px1) / 2.0, 26, title, _fit_size(cv, title, W - 40, 10.5), (10, 10, 10), "center")
 
-    # data
+    # 数据
     legend_items = []
     for si, s in enumerate(series):
         color = tuple(s.get("color") or _PALETTE[si % len(_PALETTE)])
@@ -1886,7 +1896,7 @@ def _plot_xy_canvas(
             cv.marker(xx, yy, 5.0, color)
         legend_items.append((s.get("label", "series%d" % si), color))
 
-    # legend (top-left, white box, avoids covering data lines)
+    # 图例（左上角，白底方框，避免压住数据线）
     if legend_items:
         lsize = 7.5
         widest = max(cv._text_len(lbl, lsize) for lbl, _ in legend_items)
@@ -1908,17 +1918,17 @@ def _plot_xy_canvas(
 
 
 # ======================================================================================
-# 5. Experiment planning
+# 5. 实验规划
 # ======================================================================================
 def _shadow_ratio_grid(cfg: Mapping[str, Any], smoke: bool, min_n: int = 3, with_full: bool = True) -> List[float]:
-    """E6 shadow-ratio grid (= the fraction of revoked documents that carry shadow copies).
+    """E6 的影子比例网格（= 被撤文档中含影子副本的比例）。
 
-    with with_full=True, add 1.0 (all revoked documents carry shadows) to reproduce the mechanism upper bound
-    (independent-probe convention: naive delete 183/183 = 1.000, closure delete 0/183 = 0.000).
+    with_full=True 时补 1.0（全体被撤文档都带影子）以便复现机制上界
+    （父代理独立探针口径：朴素删除 183/183 = 1.000，闭包删除 0/183 = 0.000）。
     """
     ratios = [float(x) for x in (cfg.get("shadow_ratios") or [0.0])]
     if cfg.get("_shadow_explicit"):
-        return sorted(set(ratios))  # when coverage is explicitly set on the CLI, do not merge in the default grid (keeps batch size bounded)
+        return sorted(set(ratios))  # CLI 显式指定覆盖率时不再并入默认网格（便于限定跑批规模）
     target = {0.0, 0.10, 0.30} | ({1.0} if with_full else set())
     if len(ratios) < min_n or with_full:
         ratios = sorted(set(ratios) | target)
@@ -1934,7 +1944,7 @@ def _methods_of(cfg: Mapping[str, Any]) -> List[str]:
 
 
 def plan_run_points(cfg: Mapping[str, Any], smoke: bool = False, limit: Optional[int] = None) -> List["RunPoint"]:
-    """Expand a YAML config into a list of experiment grid points (RunPoint)."""
+    """把 YAML 配置展开成实验格（RunPoint）列表。"""
     exp = str(cfg.get("exp") or "exp")
     methods = _methods_of(cfg)
     points: List[RunPoint] = []
@@ -1949,7 +1959,7 @@ def plan_run_points(cfg: Mapping[str, Any], smoke: bool = False, limit: Optional
     variants = list(cfg.get("variants") or ["full"])
     seeds = [int(x) for x in (cfg.get("seeds") or [cfg.get("seed") or C.SEED])]
 
-    # ---- stage: main (main experiment / silo scale / cross-dataset) ----
+    # ---- stage: main（主实验 / 孤岛规模 / 跨数据集） ----
     for ds in datasets:
         for silos in silos_list:
             for alpha in alpha_list:
@@ -1964,8 +1974,8 @@ def plan_run_points(cfg: Mapping[str, Any], smoke: bool = False, limit: Optional
                                     stage="main",
                                 ))
 
-    # ---- stage: e6 (motivation experiment: naive-delete residue vs shadow ratio) ----
-    # E6 needs enough revoked documents for statistically meaningful real-query readings; prefer the 5% level
+    # ---- stage: e6（动机实验：朴素删除残留 vs 影子比例） ----
+    # E6 需要足够的被撤文档才能给出有统计意义的真实查询读数；优先取 5% 档
     base_rev = 0.05 if any(abs(r - 0.05) < 1e-9 for r in rev_ratios) else (rev_ratios[0] if rev_ratios else 0.05)
     main_methods = [m for m in methods if m in ("naive_delete", "full_rebuild", "fedrevoke", "sisa")]
     for ds in datasets[:1]:
@@ -1979,7 +1989,7 @@ def plan_run_points(cfg: Mapping[str, Any], smoke: bool = False, limit: Optional
                     extra={"coverage": float(sh)},
                 ))
 
-    # ---- stage: ablation (remove shadow closure / repair / calibration; kNN and threshold sweeps) ----
+    # ---- stage: ablation（消融：去掉影子闭包 / 修复 / 校准，kNN 与阈值扫描） ----
     if cfg.get("variants") or cfg.get("knn_grid") or cfg.get("sim_threshold_grid"):
         ab_rev, ab_sh = base_rev, (shadow_ratios[0] if shadow_ratios else 0.10)
         for variant in ["full", "no_shadow_closure", "no_repair", "no_calibration"]:
@@ -1995,7 +2005,7 @@ def plan_run_points(cfg: Mapping[str, Any], smoke: bool = False, limit: Optional
                 variant="full", knn_k=int(knn), methods=[str(cfg.get("method") or "fedrevoke")],
                 stage="ablation",
             ))
-        # U3 causal control: under the same revocation, FedRevoke (anchor repair) vs the random-replica control
+        # U3 因果对照：同一次撤回下 FedRevoke(anchor 修复) vs 随机副本对照
         points.append(RunPoint(
             exp=exp, dataset=datasets[0], silos=silos_list[0], revocation_ratio=ab_rev,
             shadow_ratio=ab_sh, ratio_key="r%d" % int(round(ab_rev * 100)), seed=seeds[0],
@@ -2010,7 +2020,7 @@ def plan_run_points(cfg: Mapping[str, Any], smoke: bool = False, limit: Optional
                 methods=[str(cfg.get("method") or "fedrevoke")], stage="ablation",
             ))
 
-    # ---- stage: e7 (dual-channel coverage curves: vector-only / text-only / union of both) ----
+    # ---- stage: e7（双通道覆盖曲线：仅向量 / 仅文本 / 双通道并集） ----
     if cfg.get("e7", True):
         sim_grid = [float(x) for x in (cfg.get("sim_threshold_grid") or [0.85, 0.90, 0.92, 0.95])]
         lsh_grid = [float(x) for x in (cfg.get("lsh_threshold_grid") or [0.50, 0.70, 0.80, 0.90])]
@@ -2027,7 +2037,7 @@ def plan_run_points(cfg: Mapping[str, Any], smoke: bool = False, limit: Optional
                     stage="e7", extra={"tau": tau, "jaccard": jac, "sample_pairs": 30 if smoke else 200},
                 ))
 
-    # ---- stage: cost (cost sweep: corpus size x method) ----
+    # ---- stage: cost（代价扫描：语料规模 × 方法） ----
     if cfg.get("corpus_sizes"):
         cost_methods = [m for m in methods
                         if m in ("full_rebuild", "full_rebuild_reencode", "naive_delete", "sisa",
@@ -2046,7 +2056,7 @@ def plan_run_points(cfg: Mapping[str, Any], smoke: bool = False, limit: Optional
         points = [p for p in points if p.stage in want]
 
     if smoke:
-        # smoke: limit the number of points so it finishes within 60 seconds
+        # 冒烟：限制点数，保证 60 秒内跑完
         budget = int(limit) if limit else 14
         seen, kept = set(), []
         for p in points:
@@ -2064,7 +2074,7 @@ def plan_run_points(cfg: Mapping[str, Any], smoke: bool = False, limit: Optional
 
 
 # ======================================================================================
-# 6. Data preparation (synthetic / real)
+# 6. 数据准备（合成 / 真实）
 # ======================================================================================
 def _synthetic_for_point(cfg: Mapping[str, Any], point: "RunPoint", cache: Dict[str, Any]) -> Dict[str, Any]:
     n_docs = int(point.n_docs or cfg.get("n_docs") or 2000)
@@ -2095,7 +2105,7 @@ def _real_for_point(cfg: Mapping[str, Any], ds_key: str, cache: Dict[str, Any], 
 
 
 # ======================================================================================
-# 7. Single-point execution -> row record
+# 7. 单点执行 → 行记录
 # ======================================================================================
 def _row_from_result(point: "RunPoint", cfg: Mapping[str, Any], method: str, res: Mapping[str, Any],
                      fp: Mapping[str, Any], stage: str, notes: str) -> Dict[str, Any]:
@@ -2108,8 +2118,8 @@ def _row_from_result(point: "RunPoint", cfg: Mapping[str, Any], method: str, res
         "revocation_ratio": point.revocation_ratio, "shadow_ratio": point.shadow_ratio,
         "method": method,
         "hit_rate": forget.get("hit_rate", NAN),
-        # paper Eq.(16) naming: hit_seed = whether a deleted id enters the top-k (structurally always 0, sanity check);
-        # hit_surrogate = whether a shadow surrogate in the closure is still recallable (informative residue reading)
+        # 论文 Eq.(16) 命名：hit_seed = 被删 id 是否进 top-k（结构性恒 0，sanity）；
+        # hit_surrogate = 闭包内影子代理是否仍可召回（有信息量的残留读数）
         "hit_seed": forget.get("hit_rate", NAN),
         "hit_surrogate": forget.get("surrogate_hit_rate", NAN),
         "mia_auc": forget.get("mia_auc", NAN),
@@ -2183,7 +2193,7 @@ def _row_from_result(point: "RunPoint", cfg: Mapping[str, Any], method: str, res
         "n_reconnected": meta.get("n_reconnected", 0),
         "score_shift": meta.get("score_shift", 0.0),
         "elicit_measured": bool(forget.get("elicit_measured", False)),
-        # per-item hit flags ("0/1" strings): same item order as baselines -> paired McNemar can be computed directly
+        # 逐条命中标记（"0/1" 串）：与基线同 item 顺序 → 可直接算配对 McNemar
         "elicit_flags": "".join(str(int(x)) for x in (forget.get("elicit_flags") or [])),
         "n_qa_items": int(len(forget.get("elicit_flags") or []) or utility.get("n_qa_items", 0) or 0),
         "gold_ref_scope": "gold_intersect_revoked",
@@ -2217,9 +2227,9 @@ E7_CHANNELS = {
 
 def run_e7_point(point: "RunPoint", cfg: Mapping[str, Any], smoke: bool, caches: Dict[str, Any],
                  fp: Mapping[str, Any]) -> List[Dict[str, Any]]:
-    """E7: compare miss rate and false-delete scale of vector-only / text-only / dual-channel on real injected shadow pairs.
+    """E7：在真实注入影子对上比较 仅向量 / 仅文本 / 双通道 的漏检率与误删规模。
 
-    The denominator is fixed to the same set of injected shadow pairs (cross-silo, including moderately similar hard samples), so the three channels are directly comparable.
+    分母固定为同一组注入影子对（跨孤岛、含中等相似困难样本），因此三种通道可直接比较。
     """
     if point.dataset == "synthetic":
         ds = _synthetic_for_point(cfg, point, caches["synth"])
@@ -2239,8 +2249,8 @@ def run_e7_point(point: "RunPoint", cfg: Mapping[str, Any], smoke: bool, caches:
         sel = np.sort(rng.choice(len(pairs), max_pairs, replace=False))
         pairs = [pairs[int(i)] for i in sel]
     index = build_index(ds)
-    # Critical: the seed must be the original chunk corresponding to this shadow copy (orig_pid in shadow_pairs),
-    # otherwise expansion from other chunks of the document can never reach that shadow -- this would systematically overestimate the miss rate.
+    # 关键：seed 必须取"该影子副本对应的原始 chunk"（shadow_pairs 的 orig_pid），
+    # 否则从文档的其它 chunk 出发根本扩散不到该影子 —— 会系统性高估漏检率。
     pid_to_iid = {}
     try:
         for i, m in enumerate(index.metas_snapshot()):
@@ -2304,7 +2314,7 @@ def run_e7_point(point: "RunPoint", cfg: Mapping[str, Any], smoke: bool, caches:
 
 def run_point(point: "RunPoint", cfg: Mapping[str, Any], smoke: bool, caches: Dict[str, Any],
               generator: Any) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
-    """Execute one experiment grid point (all methods) and return (rows, info)."""
+    """执行一个实验格（所有方法）并返回 (rows, info)。"""
     info: Dict[str, Any] = {"point": point.key(), "stage": point.stage, "status": "ok", "seconds": 0.0}
     t0 = time.perf_counter()
     rows: List[Dict[str, Any]] = []
@@ -2317,9 +2327,9 @@ def run_point(point: "RunPoint", cfg: Mapping[str, Any], smoke: bool, caches: Di
             status = dict(ds.get("status") or status)
             caches.setdefault("status", {})[point.dataset] = status
         if ds is None:
-            info.update(status="skipped", reason="real data missing: %s" % ", ".join(status.get("missing", [])))
+            info.update(status="skipped", reason="真实数据缺失: %s" % ", ".join(status.get("missing", [])))
             return rows, info
-    # E4/E5 cost sweep: trim the corpus by point.n_docs (subset_dataset keeps pid renumbering and gold intersections consistent)
+    # E4/E5 代价扫描：按 point.n_docs 裁剪语料（subset_dataset 保持 pid 重编号与 gold 交集一致）
     if point.n_docs and int(point.n_docs) < len(ds.get("corpus") or []):
         ds = subset_dataset(ds, int(point.n_docs), point.seed)
         info["subset_from"] = point.n_docs
@@ -2331,9 +2341,9 @@ def run_point(point: "RunPoint", cfg: Mapping[str, Any], smoke: bool, caches: Di
     info["n_forget_docs"] = len(doc_ids)
     info["coverage"] = cov_info
 
-    # --- INTERFACES Section 11: run the fingerprint gate immediately after building the index (full mode raises on digest with shadow_ratio>0) ---
+    # --- INTERFACES §11：建索引后立即做指纹门禁（digest 且 shadow_ratio>0 时 full 模式抛错） ---
     probe_index = build_index(ds)
-    index_before = build_index(ds)  # unmutated reference index: for Q_unrel / Delta_util / rho_hat_tv
+    index_before = build_index(ds)  # 未变异参照索引：Q_unrel / Δ_util / rho_hat_tv 用
     detector = build_detector(cfg, ds.get("signatures"), knn_k=point.knn_k,
                               sim_threshold=point.sim_threshold,
                               vector_channel=(point.variant != "no_shadow_closure"))
@@ -2358,7 +2368,7 @@ def run_point(point: "RunPoint", cfg: Mapping[str, Any], smoke: bool, caches: Di
                                   generator=generator, text_store=store, notes=notes,
                                   index_before=index_before)
         except RuntimeError:
-            raise  # Section 11 fail-fast must bubble up
+            raise  # §11 fail-fast 必须冒泡
         except Exception as exc:
             traceback.print_exc()
             info["status"] = "partial"
@@ -2372,7 +2382,7 @@ def run_point(point: "RunPoint", cfg: Mapping[str, Any], smoke: bool, caches: Di
 
 
 # ======================================================================================
-# 8. Write CSV / summary / figures
+# 8. 写出 CSV / summary / 图
 # ======================================================================================
 def _cell(v: Any) -> Any:
     if isinstance(v, (np.floating, float)):
@@ -2430,11 +2440,11 @@ def row_stage(row: Mapping[str, Any]) -> str:
 
 
 def e6_monotonicity(rows: Sequence[Mapping[str, Any]], tol: float = 0.02) -> Dict[str, Any]:
-    """E6 acceptance: naive-delete residue should rise monotonically with the shadowed fraction of revoked documents, and FedRevoke should stay near 0."""
+    """E6 验收：朴素删除的残留应随"被撤文档含影子比例"单调上升，FedRevoke 应贴近 0。"""
     sub = [r for r in rows if row_stage(r) == "e6"]
     if not sub:
         return {"checked": False, "reason": "no e6 rows"}
-    # monotonicity convention: the fraction of revoked documents that still have surviving shadow copies (expected 0% -> 0, 30% -> ~0.3)
+    # 单调性口径：被撤文档中仍有存活影子副本的比例（父代理预测 0% -> 0，30% -> ~0.3）
     metric = "residual_doc_rate"
     out: Dict[str, Any] = {"checked": True, "metric": metric, "methods": {}}
     methods = []
@@ -2486,14 +2496,14 @@ def env_report() -> Dict[str, Any]:
         "transformers": has("transformers"),
         "peft": has("peft"),
         "matplotlib": has("matplotlib"),
-        "matplotlib_note": "matplotlib not installed (pip install forbidden) -> using the built-in dependency-free PDF/PNG plotting backend",
+        "matplotlib_note": "未安装 matplotlib（禁止 pip install）→ 使用内置无依赖 PDF/PNG 绘图后端",
     }
 
 
 def _residual_metric(rows: Sequence[Mapping[str, Any]]) -> str:
-    """Plotting metric for residual leakage: prefer deterministic document-level residue, then generation-side elicitation rate.
+    """残留泄漏的作图指标：优先确定性文档级残留，其次生成端诱导率。
 
-    residual_doc_rate = the fraction of revoked documents that still have surviving cross-silo shadow copies (E6 main metric)
+    residual_doc_rate = 被撤文档中仍有存活跨孤岛影子副本的比例（E6 主指标）
     """
     has_res = any(isinstance(r.get("residual_doc_rate"), (int, float)) and math.isfinite(float(r.get("residual_doc_rate")))
                   for r in rows)
@@ -2505,7 +2515,7 @@ def _residual_metric(rows: Sequence[Mapping[str, Any]]) -> str:
 
 
 def figure_e6(rows: Sequence[Mapping[str, Any]], exp: str, out_dir: Any) -> Optional[Dict[str, str]]:
-    """E6 motivation figure: naive-delete residual leakage vs shadow ratio."""
+    """E6 动机图：朴素删除的残留泄漏 vs 影子比例。"""
     import numpy as _np
 
     sub = [r for r in rows if row_stage(r) == "e6"] or list(rows)
@@ -2546,7 +2556,7 @@ def figure_e6(rows: Sequence[Mapping[str, Any]], exp: str, out_dir: Any) -> Opti
 
 
 def figure_e6_query_families(rows: Sequence[Mapping[str, Any]], exp: str, out_dir: Any) -> Optional[Dict[str, str]]:
-    """E6 second figure: self-query probe (upper bound) / real-query (headline) / unrelated queries (control)."""
+    """E6 第二条图：self-query 探针（上界） / real-query（头条） / 无关查询（对照）。"""
     import numpy as _np
 
     sub = [r for r in rows if row_stage(r) == "e6"] or list(rows)
@@ -2560,7 +2570,7 @@ def figure_e6_query_families(rows: Sequence[Mapping[str, Any]], exp: str, out_di
         m = str(r.get("method"))
         if m not in present:
             present.append(m)
-    # draw only two representative curves: the no-closure baseline (naive_delete/full_rebuild) and FedRevoke
+    # 只画两条代表性曲线：无闭包基线（naive_delete/full_rebuild）与 FedRevoke
     methods = [m for m in ("naive_delete", "full_rebuild") if m in present][:1] + \
               [m for m in ("fedrevoke",) if m in present]
     series = []
@@ -2607,7 +2617,7 @@ def figure_e6_query_families(rows: Sequence[Mapping[str, Any]], exp: str, out_di
 
 
 def figure_e7_channels(rows: Sequence[Mapping[str, Any]], exp: str, out_dir: Any) -> Dict[str, str]:
-    """E7: miss-rate curves for vector-only / text-only / union of both (one chart each for tau and the Jaccard threshold)."""
+    """E7：仅向量 / 仅文本 / 双通道并集 的漏检率曲线（对 τ 与 Jaccard 阈值各一张）。"""
     import numpy as _np
 
     sub = [r for r in rows if row_stage(r) == "e7"]
@@ -2667,7 +2677,7 @@ def figure_e7_channels(rows: Sequence[Mapping[str, Any]], exp: str, out_dir: Any
 
 def figure_pareto(rows: Sequence[Mapping[str, Any]], exp: str, out_dir: Any,
                   cost_col: str = "bytes_transferred") -> Optional[Dict[str, str]]:
-    """E5 cost Pareto figure: residual leakage vs reindexing cost (default transferred bytes, log scale)."""
+    """E5 代价 Pareto 图：残留泄漏 vs 重索引代价（默认传输字节，对数轴）。"""
     import numpy as _np
 
     if not rows:
@@ -2700,7 +2710,7 @@ def figure_pareto(rows: Sequence[Mapping[str, Any]], exp: str, out_dir: Any,
         log_x=True,
         figsize=(6.4, 4.0),
     )
-    # annotate method names on the PDF/PNG (draw point labels at the legend position of the second series)
+    # 在 PDF/PNG 上补注方法名（用第二个序列的图例位置画出点标签）
     for label, x, y in zip(labels, xs, ys):
         print("    [pareto:%s] %-16s x=%.4g y=%.3f" % (cost_col, label, x, y))
     if cost_col == "bytes_transferred":
@@ -2714,7 +2724,7 @@ def figure_pareto(rows: Sequence[Mapping[str, Any]], exp: str, out_dir: Any,
 
 
 # ======================================================================================
-# 9. Main flow
+# 9. 主流程
 # ======================================================================================
 def run_experiment(cfg: Mapping[str, Any], smoke: bool = False, limit: Optional[int] = None,
                    out_dir: Optional[Any] = None, make_figures: bool = True) -> Dict[str, Any]:
@@ -2743,7 +2753,7 @@ def run_experiment(cfg: Mapping[str, Any], smoke: bool = False, limit: Optional[
 
     elapsed = time.perf_counter() - t_start
 
-    # ---- real-data availability status (for reports/summaries) ----
+    # ---- 真实数据可用性状态（报告/摘要用） ----
     ds_keys = sorted({str(p.dataset) for p in points if str(p.dataset) != "synthetic"})
     extra_keys = [] if smoke else sorted(set(C.DATASETS) - set(ds_keys))
     loaded_status = caches.get("status") or {}
@@ -2805,13 +2815,13 @@ def run_experiment(cfg: Mapping[str, Any], smoke: bool = False, limit: Optional[
         "aggregates_by_method_shadow": agg_shadow,
         "stage_seconds": infos,
         "notes": [
-            "smoke mode uses on-the-fly synthetic data + MockGenerator; the scale is small and absolute cost values do not represent real scale",
-            "hit_rate is structurally 0 (index_core guarantees search() never returns deleted ids); what distinguishes methods is elicit_rate / surrogate_hit_rate",
-            "INTERFACES Section 11: the signature matrix must be injected when shadow_ratio>0; digest fingerprints fail-fast in full mode",
+            "smoke 模式为现场合成数据 + MockGenerator，规模小、绝对代价数值不代表真实规模",
+            "hit_rate 结构性为 0（index_core 保证 search() 不返回已删除 id）；区分方法优劣的是 elicit_rate / surrogate_hit_rate",
+            "INTERFACES §11：shadow_ratio>0 时签名矩阵必须注入；digest 指纹在 full 模式下 fail-fast",
         ],
     }
 
-    # ---- figures ----
+    # ---- 图 ----
     figures = {}
     if make_figures and rows:
         try:
@@ -2819,28 +2829,28 @@ def run_experiment(cfg: Mapping[str, Any], smoke: bool = False, limit: Optional[
             if f6:
                 figures["e6_motivation"] = f6
         except Exception as exc:
-            summary["notes"].append("E6 plotting failed: %s: %s" % (type(exc).__name__, exc))
+            summary["notes"].append("E6 绘图失败: %s: %s" % (type(exc).__name__, exc))
         try:
             f6b = figure_e6_query_families(rows, exp, FIGURES_DIR)
             if f6b:
                 figures["e6_query_families"] = f6b
         except Exception as exc:
-            summary["notes"].append("E6 query-family plotting failed: %s: %s" % (type(exc).__name__, exc))
+            summary["notes"].append("E6 query-family 绘图失败: %s: %s" % (type(exc).__name__, exc))
         try:
             f7 = figure_e7_channels(rows, exp, FIGURES_DIR)
             if f7:
                 figures["e7_channels"] = f7
         except Exception as exc:
-            summary["notes"].append("E7 plotting failed: %s: %s" % (type(exc).__name__, exc))
+            summary["notes"].append("E7 绘图失败: %s: %s" % (type(exc).__name__, exc))
         try:
             f5 = figure_pareto(rows, exp, FIGURES_DIR)
             if f5:
                 figures["e5_pareto"] = f5
         except Exception as exc:
-            summary["notes"].append("E5 plotting failed: %s: %s" % (type(exc).__name__, exc))
+            summary["notes"].append("E5 绘图失败: %s: %s" % (type(exc).__name__, exc))
     summary["figures"] = figures
 
-    # ---- rho_hat dual convention + Q_unrel reliability ----
+    # ---- rho_hat 双口径 + Q_unrel 可靠性（父代理裁决 B/E） ----
     rho_tv = [r.get("rho_hat_tv") for r in rows
               if isinstance(r.get("rho_hat_tv"), (int, float)) and math.isfinite(float(r.get("rho_hat_tv")))]
     rho_cons = [r.get("rho_hat") for r in rows
@@ -2848,15 +2858,15 @@ def run_experiment(cfg: Mapping[str, Any], smoke: bool = False, limit: Optional[
     summary["rho_hat"] = {
         "rho_hat_tv_mean": float(np.mean(rho_tv)) if rho_tv else NAN,
         "rho_hat_conservative_mean": float(np.mean(rho_cons)) if rho_cons else NAN,
-        "definition": "rho_hat_tv/rho_hat_ret = Eq.(18) max_q [1-|R_k(q;I')∩R_k(q;I∅)|/k]，"
-                      "oracle side I_empty = rebuilt after removing seeds union injected shadows；"
-                      "rho_hat = max(rho_hat_ret, elicit_rate)（Definition 1 operationalization）；"
-                      "rho_hat_conservative/rho_hat_bound = max(hit_rate, elicit_rate)（conservative bound without an oracle）",
+        "definition": "rho_hat_tv/rho_hat_ret = 式(18) max_q [1-|R_k(q;I')∩R_k(q;I∅)|/k]，"
+                      "oracle 侧 I∅ = 删去种子∪注入影子后重建；"
+                      "rho_hat = max(rho_hat_ret, elicit_rate)（Definition 1 操作化）；"
+                      "rho_hat_conservative/rho_hat_bound = max(hit_rate, elicit_rate)（无 oracle 保守上界）",
         "used_in_results_section": "rho_hat_ret + rho_hat_bound",
     }
     unrel = [(r.get("method"), r.get("n_unrel"), r.get("unrel_reliable")) for r in rows if r.get("n_unrel")]
     summary["q_unrel"] = {
-        "definition": "Q_unrel = { q : gold_pids(q) ∩ deletion_closure = ∅ }；Δ_util is evaluated only on this subset",
+        "definition": "Q_unrel = { q : gold_pids(q) ∩ deletion_closure = ∅ }；Δ_util 只在该子集上评估",
         "cells": [{"method": m, "n_unrel": int(n), "reliable": bool(rel)} for m, n, rel in unrel],
         "min_n_threshold": 50,
         "unreliable_cells": [m for m, n, rel in unrel if not rel],
@@ -2869,28 +2879,28 @@ def run_experiment(cfg: Mapping[str, Any], smoke: bool = False, limit: Optional[
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
-    ap = argparse.ArgumentParser(description="FedRevoke experiment entry point")
-    ap.add_argument("--config", default=str(CFG_DIR / "e0_smoke.yaml"), help="path to the YAML experiment config")
-    ap.add_argument("--smoke", action="store_true", help="smoke mode: synthetic data + MockGenerator, finishes within 60 seconds")
-    ap.add_argument("--limit", type=int, default=None, help="maximum number of experiment grid points")
-    ap.add_argument("--out-dir", default=None, help="results directory (default artifacts/results/<exp>)")
-    ap.add_argument("--no-figures", action="store_true", help="skip plotting")
+    ap = argparse.ArgumentParser(description="FedRevoke 实验入口")
+    ap.add_argument("--config", default=str(CFG_DIR / "e0_smoke.yaml"), help="YAML 实验配置路径")
+    ap.add_argument("--smoke", action="store_true", help="冒烟模式：合成数据 + MockGenerator，60 秒内跑完")
+    ap.add_argument("--limit", type=int, default=None, help="实验格（grid point）数量上限")
+    ap.add_argument("--out-dir", default=None, help="结果目录（默认 artifacts/results/<exp>）")
+    ap.add_argument("--no-figures", action="store_true", help="跳过绘图")
     ap.add_argument("--tier", choices=["a", "b"], default=None,
-                    help="evaluation tier: a=retrieval-only full grid (default); b=with generation (elicit/EM/F1), reduced grid")
+                    help="评测档：a=纯检索全网格（默认）；b=含生成（elicit/EM/F1）缩减网格")
     ap.add_argument("--model", choices=["1.5b", "7b"], default="1.5b",
-                    help="Tier B generator: 1.5b=Qwen2.5-1.5B-Instruct; 7b=Qwen2.5-7B-Instruct (4bit)")
-    ap.add_argument("--dataset", default=None, help="override the dataset in the config (e.g. ds1)")
-    ap.add_argument("--exp", default=None, help="override the experiment name (determines results/figures file names)")
-    ap.add_argument("--stages", default=None, help="run only the specified stages, comma-separated: main,e6,ablation,cost")
-    ap.add_argument("--limit-queries", type=int, default=None, help="cap on evaluation queries (overrides the config)")
-    ap.add_argument("--corpus-sizes", default=None, help="override the cost-stage corpus size list, e.g. 2500,5000,10000")
-    ap.add_argument("--methods", default=None, help="override the method list (comma-separated; fedrevoke means this method)")
-    ap.add_argument("--n-anchors", type=int, default=None, help="override the repair anchor count (64 recommended)")
+                    help="Tier B 生成器：1.5b=Qwen2.5-1.5B-Instruct；7b=Qwen2.5-7B-Instruct（4bit）")
+    ap.add_argument("--dataset", default=None, help="覆盖配置中的 dataset（如 ds1）")
+    ap.add_argument("--exp", default=None, help="覆盖实验名（决定 results/figures 文件名）")
+    ap.add_argument("--stages", default=None, help="只跑指定 stage，逗号分隔：main,e6,ablation,cost")
+    ap.add_argument("--limit-queries", type=int, default=None, help="评测查询数上限（覆盖配置）")
+    ap.add_argument("--corpus-sizes", default=None, help="覆盖 cost 阶段的语料规模列表，如 2500,5000,10000")
+    ap.add_argument("--methods", default=None, help="覆盖方法列表（逗号分隔；fedrevoke 表示本方法）")
+    ap.add_argument("--n-anchors", type=int, default=None, help="覆盖 repair 的 anchor 数（SA7 后建议 64）")
     ap.add_argument("--closed-book", action="store_true",
-                    help="additionally generate one closed-book (empty-context) answer to report the elicit floor (criterion unchanged)")
-    ap.add_argument("--rev-ratios", default=None, help="override the revocation ratio list, e.g. 0.05")
-    ap.add_argument("--shadow-ratios", default=None, help="override the shadow ratio list, e.g. 0.1")
-    ap.add_argument("--list-baselines", action="store_true", help="list available baselines and exit")
+                    help="额外生成一次闭卷（空上下文）作答，输出 elicit 地板值（判据不变）")
+    ap.add_argument("--rev-ratios", default=None, help="覆盖撤回比例列表，如 0.05")
+    ap.add_argument("--shadow-ratios", default=None, help="覆盖影子比例列表，如 0.1")
+    ap.add_argument("--list-baselines", action="store_true", help="列出可用基线后退出")
     args = ap.parse_args(argv)
 
     if args.list_baselines:
@@ -2934,7 +2944,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         summary["n_rows"], summary["elapsed_seconds"],
         summary.get("csv", {}).get("all"), summary.get("figures")))
     if summary.get("real_data_missing"):
-        print("[run_experiments] real data gaps (running smoke only):")
+        print("[run_experiments] 真实数据缺口（只跑 smoke）:")
         for k, v in summary["real_data_missing"].items():
             print("   - %s: %s" % (k, ", ".join(v)))
     return 0

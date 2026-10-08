@@ -30,18 +30,19 @@ def ensure_beir(name: str, files: tuple[str, ...]) -> None:
     out.mkdir(parents=True, exist_ok=True)
     from huggingface_hub import hf_hub_download
 
+    repo = "BeIR/nq" if name == "nq" else "BeIR/trec-covid"
     for fn in files:
         dest = out / fn
         if dest.exists() and dest.stat().st_size > 0:
             print(f"exists {dest} ({dest.stat().st_size})")
             continue
-        p = hf_hub_download(
-            repo_id="BeIR/nq", filename=fn, repo_type="dataset"
-        ) if name == "nq" else hf_hub_download(
-            repo_id="BeIR/trec-covid", filename=fn, repo_type="dataset"
-        )
+        # BeIR keeps qrels under qrels/test.tsv in the HF repo; we flatten it
+        # to qrels_test.tsv so it matches src/fedrevoke/data_prep.py.
+        src_fn = "qrels/test.tsv" if fn == "qrels_test.tsv" else fn
+        p = hf_hub_download(repo_id=repo, filename=src_fn, repo_type="dataset")
+        dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(p, dest)
-        print(f"copied {fn} -> {dest} ({dest.stat().st_size})")
+        print(f"copied {src_fn} -> {dest} ({dest.stat().st_size})")
 
 
 def main() -> int:
@@ -49,11 +50,11 @@ def main() -> int:
     if which in ("ds1", "all", "multihoprag"):
         ensure_multihoprag()
     if which in ("ds2", "all", "nq"):
-        ensure_beir("nq", ("corpus.parquet", "queries.parquet", "qrels/test.tsv"))
+        ensure_beir("nq", ("corpus.parquet", "queries.parquet", "qrels_test.tsv"))
     if which in ("ds3", "all", "trec-covid"):
         ensure_beir(
             "trec-covid",
-            ("corpus.parquet", "queries.parquet", "qrels/test.tsv"),
+            ("corpus.parquet", "queries.parquet", "qrels_test.tsv"),
         )
     print("done")
     return 0

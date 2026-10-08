@@ -15,7 +15,7 @@ authors:
     given-names: Yongkang
     email: apanda@nuaa.edu.cn
     affiliation: "Nanjing University of Aeronautics and Astronautics, Nanjing, China"
-repository-code: "https://github.com/REPLACE-WITH-YOUR-ACCOUNT/FedRevoke"
+repository-code: "https://github.com/NUAApanda-1116/Shadow-Aware-Retrieval-Level-Forgetting"
 keywords:
   - federated retrieval-augmented generation
   - retrieval-level forgetting

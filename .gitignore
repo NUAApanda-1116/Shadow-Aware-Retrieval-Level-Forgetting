@@ -1,0 +1,30 @@
+# ---- Python -------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+.venv*/
+venv/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Raw corpora: never committed, re-download with tools/download_raw_data.py
+data/raw/*
+!data/raw/README.md
+!data/raw/.gitkeep
+
+# ---- Regenerated figures / large run outputs ---------------------------
+artifacts/figures/*.png
+artifacts/figures/*.pdf
+
+# ---- OS / editor --------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp

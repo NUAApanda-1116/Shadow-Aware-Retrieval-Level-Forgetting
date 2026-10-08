@@ -6,7 +6,7 @@ Output: artifacts/figures/paper_cost_scaling.{pdf,png}  paper_e6_motivation.{pdf
 Design notes:
   * The cost figure reports Claim 3 under three measures: write amplification (bytes) / wall-clock (cached embeddings) / wall-clock (including re-encoding, converted using measured encoding throughput).
   * One independent curve per method per figure (methods are no longer averaged into a single line).
-  * IEEE Access layout: two-column width 7.16in, font size 8, 300dpi, vector PDF.
+  * Two-column journal layout: width 7.16in, font size 8, 300dpi, vector PDF.
 """
 from __future__ import annotations
 import sys

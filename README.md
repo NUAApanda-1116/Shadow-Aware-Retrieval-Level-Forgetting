@@ -41,8 +41,17 @@ python -m venv .venv
 `data/processed/multihoprag/` contains exactly what the paper says is released:
 passage ids (`pid_meta.json`), silo assignments (`silo_assignments.json`),
 injected shadow pairs with their similarity records (`shadow_pairs.json`),
-forget sets (`forget_sets.json`), pre-computed embeddings, and the MinHash
-signature matrix (`minhash_sig.npy`).
+forget sets (`forget_sets.json`), and the parameter records
+(`minhash_meta.json`, `embedding_meta.json`).
+
+The pre-computed embeddings and the MinHash signature matrix (`minhash_sig.npy`)
+are **not shipped, on purpose**: both are regenerable and the raw matrices are
+large (DS1 26 MB, DS2 ~320 MB, DS3 ~690 MB). Each is a deterministic function
+of the master seed `20260214` and the recorded parameters, so
+`python -m fedrevoke.data_prep --datasets ds1 --silos 5 10` recreates them next
+to the splits. Re-encoding on different hardware can perturb the last bits of an
+embedding, so closure membership is reproducible at the reported operating
+point rather than bit-for-bit.
 
 For the raw corpora see [data/raw/README.md](data/raw/README.md) (includes one
 known path bug in the downloader).
@@ -104,7 +113,7 @@ artifacts/       results / logs / certificates (figures land in artifacts/figure
 
 ---
 
-## 7. Read this before reproducing paper tables
+## 6. Read this before reproducing paper tables
 
 This repository **ships only part of the experimental results** (DS1 E1/E6 grid
 + smoke run). Data needed for Tables II–III–IV–V and Figs. 2–3 is not in the
