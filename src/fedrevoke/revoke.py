@@ -127,6 +127,23 @@ def _json_default(obj: Any) -> Any:
     return str(obj)
 
 
+def _strict_jsonable(obj: Any) -> Any:
+    """Recursively convert to strict-JSON-representable values: non-finite floats -> None.
+
+    Applied at issuance only; the verifier does not sanitize, so pre-existing
+    certificates (which may contain NaN) still re-hash to their stored digests.
+    """
+    if isinstance(obj, float):
+        return obj if (obj == obj and obj not in (float("inf"), float("-inf"))) else None
+    if isinstance(obj, dict):
+        return {k: _strict_jsonable(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_strict_jsonable(v) for v in obj]
+    if type(obj).__module__ == "numpy" and hasattr(obj, "tolist"):
+        return _strict_jsonable(obj.tolist())
+    return obj
+
+
 def canonical_json(obj: Any) -> str:
     """Canonical JSON text: sorted keys, compact separators, non-ASCII preserved as-is."""
     return json.dumps(obj, sort_keys=True, ensure_ascii=False, separators=(",", ":"), default=_json_default)
@@ -719,7 +736,7 @@ class RevocationPipeline:
     def write_certificate(self, payload: Mapping[str, Any]) -> tuple:
         """Write the certificate to cert_dir (atomic write); returns (full certificate dict, path)."""
         prev_hash, seq = self._chain_head()
-        body = dict(payload)
+        body = _strict_jsonable(dict(payload))
         body["certificate_version"] = CERT_VERSION
         body["seq"] = int(seq)
         body["prev_hash"] = str(prev_hash)

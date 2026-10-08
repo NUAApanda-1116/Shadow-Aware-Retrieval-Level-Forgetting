@@ -1184,6 +1184,8 @@ def build_repair(cfg: Mapping[str, Any], *, enabled: bool = True, recalibrate: O
     kwargs = {}
     if n_anchors is not None:
         kwargs["n_anchors"] = int(n_anchors)
+    if rcfg.get("max_replicas") is not None:
+        kwargs["max_replicas"] = int(rcfg["max_replicas"])
     return AnchorRepair(
         **kwargs,
         recalibrate=bool(rcfg.get("recalibrate", True) if recalibrate is None else recalibrate),

@@ -1508,10 +1508,10 @@ class TDSCAdapterNoDetector(TDSCAdapter):
 # ======================================================================================
 # E5 convention supplement: full rebuild including "re-encoding" (proactive disclosure of baseline fairness)
 # ======================================================================================
-REENCODE_SECONDS_BY_DATASET = {  # measured encoding throughput (full corpus, bge-small, cuda)
-    "multihoprag": 5.23,
-    "nq": 42.97,
-    "trec-covid": 151.6,
+REENCODE_SECONDS_BY_DATASET = {  # remeasured full-corpus re-encoding (bge-small-en-v1.5, batch 256, fp16, cuda)
+    "multihoprag": 6.01,    # 11,410 texts -> 1,898 text/s
+    "nq": 73.73,            # 156,671 texts -> 2,125 text/s
+    "trec-covid": 209.13,   # 386,596 texts -> 1,849 text/s
 }
 
 
